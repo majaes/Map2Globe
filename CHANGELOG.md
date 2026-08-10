@@ -48,4 +48,8 @@
 
 * Added a dedicated "Globe Builder" toolbar (`iface.addToolBar`) instead of adding the plugin's icon to the generic Plugins toolbar, so it's visible as its own toggleable toolbar
 
+### 0.6.5 - 10/08/2026
+
+* Fixed the globe's custom orthographic projection silently failing to apply (project CRS stayed at EPSG:4326 and the map never rendered as a globe): PROJ ≥ 6 requires `+type=crs` on proj-string CRS definitions, otherwise `QgsCoordinateReferenceSystem.createFromProj()` returns an invalid CRS and `setCrs()` is a no-op. Added `+type=crs` to all projection strings in `definitions/projections.py` and added warning logs everywhere `createFromProj()`'s return value was previously ignored (`core/globe.py`, `core/halo.py`)
+
 ##

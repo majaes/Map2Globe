@@ -163,7 +163,9 @@ class Globe:
         self.qgis_instance.setCrs(WGS84)
         proj_string = self.projection.value.proj_str(self.origin)
         crs = QgsCoordinateReferenceSystem()
-        crs.createFromProj(proj_string)
+        if not crs.createFromProj(proj_string):
+            LOGGER.warning(tr(u"Could not create the globe's custom projection"), extra=bar_msg())
+            return
         self.qgis_instance.setCrs(crs)
 
     def change_temporarily_to_globe_projection(self):
@@ -221,7 +223,8 @@ class Globe:
         ms = QgsMapSettings()
         ms.setLayers(layers)  # set layers to be mapped
         crs = QgsCoordinateReferenceSystem()
-        crs.createFromProj(self.projection.value.proj_str(self.origin))
+        if not crs.createFromProj(self.projection.value.proj_str(self.origin)):
+            LOGGER.warning(tr(u"Could not create the globe's custom projection"), extra=bar_msg())
         map.setCrs(crs)
         map.setFollowVisibilityPreset(True)
         map.setFollowVisibilityPresetName(Globe.THEME_NAME)

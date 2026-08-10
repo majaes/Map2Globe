@@ -16,6 +16,8 @@
 #  You should have received a copy of the GNU General Public License
 #  along with GlobeBuilder.  If not, see <https://www.gnu.org/licenses/>.
 
+import logging
+
 from qgis.core import (QgsFillSymbol, QgsEffectStack, QgsDropShadowEffect, QgsInnerShadowEffect,
                        QgsGeometryGeneratorSymbolLayer, QgsVectorLayer, QgsFeature, QgsGeometry, QgsPointXY,
                        QgsCoordinateTransform, QgsProject)
@@ -25,7 +27,10 @@ from ..definitions.projections import Projections
 from ..definitions.settings import (TRANSPARENT_COLOR, HaloDrawMethod, EARTH_RADIUS, DEFAULT_HALO_DRAW_METHOD,
                                     DEFAULT_NUMBER_OF_SEGMENTS, WGS84)
 from ..qgis_plugin_tools.tools.i18n import tr
+from ..qgis_plugin_tools.tools.resources import plugin_name
 from ..qgis_plugin_tools.tools.settings import get_setting
+
+LOGGER = logging.getLogger(plugin_name())
 
 
 class Halo:
@@ -47,7 +52,8 @@ class Halo:
         self.iface.mainWindow().blockSignals(True)
         layer = QgsVectorLayer(draw_method.value, self.LAYER_NAME, "memory")
         crs = layer.crs()
-        crs.createFromProj(proj_string)
+        if not crs.createFromProj(proj_string):
+            LOGGER.warning(tr(u"Could not create the globe's custom projection for the halo"))
         layer.setCrs(crs)
         self.iface.mainWindow().blockSignals(False)
 

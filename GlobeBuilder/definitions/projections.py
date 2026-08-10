@@ -35,21 +35,21 @@ class Projection:
 
 class Projections(Enum):
     AZIMUTHAL_ORTHOGRAPHIC = Projection(tr(u'Azimuthal Orthographic'),
-                                        '+proj=ortho +lat_0={lat} +lon_0={lon} +x_0=0 +y_0=0 +a=6370997 +b=6370997 +units=m +no_defs')
+                                        '+proj=ortho +lat_0={lat} +lon_0={lon} +x_0=0 +y_0=0 +a=6370997 +b=6370997 +units=m +no_defs +type=crs')
 
     # Unfortunately +lon_0={lon} causes nasty rendering artifacts for all projections below (tested with QGIS 3.14.0 and 3.20.3)
 
     # https://www.gislounge.com/how-to-use-the-equal-earth-projection-using-qgis-on-the-mac/
-    EQUAL_EARTH = Projection(tr(u'Equal Earth'), '+proj=eqearth +datum=WGS84 +units=m +no_defs', (5, 2))
+    EQUAL_EARTH = Projection(tr(u'Equal Earth'), '+proj=eqearth +datum=WGS84 +units=m +no_defs +type=crs', (5, 2))
 
     # 'https://proj.org/operations/projections/hammer.html'
-    HAMMER_ECKERT = Projection(tr(u'Hammer & Eckert-Greifendorff'), '+proj=hammer')
+    HAMMER_ECKERT = Projection(tr(u'Hammer & Eckert-Greifendorff'), '+proj=hammer +type=crs')
 
     # 'https://proj.org/operations/projections/aitoff.html'
-    AITOFF = Projection(tr(u'Aitoff'), '+proj=aitoff')
+    AITOFF = Projection(tr(u'Aitoff'), '+proj=aitoff +type=crs')
 
     # 'https://proj.org/operations/projections/eck1.html'
-    ECKERT_I = Projection(tr(u'Eckert I'), '+proj=eck1')
+    ECKERT_I = Projection(tr(u'Eckert I'), '+proj=eck1 +type=crs')
 
     @staticmethod
     def proj_from_id(tr_name: str):
