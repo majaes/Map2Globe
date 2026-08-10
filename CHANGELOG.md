@@ -69,4 +69,8 @@
 
 * Fixed changing the "Countries" resolution (e.g. 50m → 110m) having no effect once the layer already existed: `load_natural_earth_data()` matched layers by name only and reused whatever was already loaded regardless of the requested source file. It now compares the existing layer's source against the requested one and reloads it whenever they differ. Also fixed a related latent bug where a failed remote load was never detected (`QgsVectorLayer(...)` never returns `None`, even when invalid) so the local-data fallback never actually ran; now checked via `layer.isValid()`.
 
+### 0.7.0 - 10/08/2026
+
+* Added a "None" option to "Halo type" so the globe can be built without any halo layer at all. Selecting it removes any existing Halo layer instead of creating one, and disables the now-irrelevant halo color pickers.
+
 ##

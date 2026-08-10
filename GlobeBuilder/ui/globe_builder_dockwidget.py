@@ -79,6 +79,7 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.on_radioButtonGeocoding_toggled(self.radioButtonGeocoding.isChecked())
         self.on_radioButtonHFill_toggled(self.radioButtonHFill.isChecked())
         self.on_radioButtonHFillWithHalo_toggled(self.radioButtonHFillWithHalo.isChecked())
+        self.on_radioButtonHNone_toggled(self.radioButtonHNone.isChecked())
         self.on_checkBoxIntCountries_stateChanged()
 
         self.populate_comboBoxLayouts()
@@ -133,6 +134,12 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     @pyqtSlot(bool)
     def on_radioButtonHFill_toggled(self, is_checked):
         self.mColorButtonHFill.setEnabled(is_checked or self.radioButtonHFillWithHalo.isChecked())
+
+    @pyqtSlot(bool)
+    def on_radioButtonHNone_toggled(self, is_checked):
+        self.mColorButtonHalo.setEnabled(not is_checked)
+        self.mColorButtonHFill.setEnabled(not is_checked and (
+            self.radioButtonHFill.isChecked() or self.radioButtonHFillWithHalo.isChecked()))
 
     @pyqtSlot(int)
     def on_spinBoxMaxResults_valueChanged(self, value):
@@ -231,8 +238,11 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 self.comboBoxProjections.addItem(projection.value.name)
 
     def add_halo_to_globe(self):
-        self.globe.add_halo(self.radioButtonHHalo.isChecked(), self.mColorButtonHalo.color(),
-                            self.get_halo_fill_color(), self.radioButtonHFillWithHalo.isChecked())
+        if self.radioButtonHNone.isChecked():
+            self.globe.remove_halo()
+        else:
+            self.globe.add_halo(self.radioButtonHHalo.isChecked(), self.mColorButtonHalo.color(),
+                                self.get_halo_fill_color(), self.radioButtonHFillWithHalo.isChecked())
         self.globe.refresh_theme()
 
     def get_halo_fill_color(self):

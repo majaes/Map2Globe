@@ -199,14 +199,17 @@ class Globe:
         return [layer.name() for layer in QgsProject.instance().mapLayers().values()]
 
     # noinspection PyArgumentList
+    def remove_halo(self):
+        [self.qgis_instance.removeMapLayer(lyr.id()) for lyr in
+         self.qgis_instance.mapLayersByName(Halo.LAYER_NAME)]
+
     def add_halo(self, use_effects, stroke_color, fill_color=None, halo_with_fill=False):
         halo = Halo(self.iface, self.origin, self.projection)
 
         if halo_with_fill:
             self.add_halo(True, stroke_color)
         else:
-            [self.qgis_instance.removeMapLayer(lyr.id()) for lyr in
-             self.qgis_instance.mapLayersByName(halo.LAYER_NAME)]
+            self.remove_halo()
 
         layer, index = halo.create_halo_layer(use_effects, stroke_color, fill_color)
         self.insert_layer_to_group(layer, index)
