@@ -109,7 +109,11 @@ def test_group_deletion(globe):
     group = globe.group
     globe.delete_group()
     children = QgsProject.instance().layerTreeRoot().children()
-    assert group not in children
+    # The group itself is kept (not removed) so that layers the user manually
+    # placed inside it are not orphaned; only the plugin's own managed layers
+    # (Halo/Countries/Graticules/S2 Cloudless) are cleared out.
+    assert group in children
+    assert len(group.children()) == 0
 
 
 @pytest.mark.skip('TODO: figure way to test processing')

@@ -64,14 +64,19 @@ class Globe:
         else:
             return root.addGroup(Globe.GROUP_NAME)
 
+    # Layer names the plugin itself creates and is therefore safe to delete/recreate.
+    # Layers manually added to the group by the user (e.g. their own basemap) are left untouched.
+    MANAGED_LAYER_NAMES = {Halo.LAYER_NAME, Graticules.LAYER_NAME, tr(u'Countries'), tr(u'S2 Cloudless 2018')}
+
     def delete_group(self):
         group = self.group
-        root = self.qgis_instance.layerTreeRoot()
         if group is not None:
-            for child in group.children():
+            for child in list(group.children()):
                 dump = child.dump()
-                self.qgis_instance.removeMapLayer(dump.split("=")[-1].strip())
-            root.removeChildNode(group)
+                layer_id = dump.split("=")[-1].strip()
+                layer = self.qgis_instance.mapLayer(layer_id)
+                if layer is not None and layer.name() in Globe.MANAGED_LAYER_NAMES:
+                    self.qgis_instance.removeMapLayer(layer_id)
 
     def set_origin(self, coordinates):
         if coordinates is not None:

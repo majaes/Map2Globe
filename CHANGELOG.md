@@ -52,4 +52,8 @@
 
 * Fixed the globe's custom orthographic projection silently failing to apply (project CRS stayed at EPSG:4326 and the map never rendered as a globe): PROJ ≥ 6 requires `+type=crs` on proj-string CRS definitions, otherwise `QgsCoordinateReferenceSystem.createFromProj()` returns an invalid CRS and `setCrs()` is a no-op. Added `+type=crs` to all projection strings in `definitions/projections.py` and added warning logs everywhere `createFromProj()`'s return value was previously ignored (`core/globe.py`, `core/halo.py`)
 
+### 0.6.6 - 10/08/2026
+
+* Fixed "Add the Globe to a Layout" deleting any layer the user had manually placed inside the "Globe" group: `Globe.delete_group()` unconditionally removed every child of the group before rebuilding it. It now only removes the plugin's own managed layers (Halo/Countries/Graticules/S2 Cloudless) by name, and no longer removes the group node itself, so manually added layers (e.g. a filtered/highlighted basemap) survive repeated clicks
+
 ##
