@@ -247,6 +247,11 @@ class Globe:
         crs = QgsCoordinateReferenceSystem()
         if not crs.createFromProj(self.projection.value.proj_str(self.origin)):
             LOGGER.warning(tr(u"Could not create the globe's custom projection"), extra=bar_msg())
+        # Without this, fullExtent() below is computed in QgsMapSettings' default CRS
+        # (geographic, degree-range) instead of the globe's orthographic CRS (metre-range),
+        # so the resulting rect -- applied as if it were in metres -- was tiny: the map item
+        # ended up zoomed in on a sliver right at the projection centre instead of the globe.
+        ms.setDestinationCrs(crs)
         map.setCrs(crs)
         map.setFollowVisibilityPreset(True)
         map.setFollowVisibilityPresetName(Globe.THEME_NAME)

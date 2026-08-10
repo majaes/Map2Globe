@@ -81,4 +81,8 @@
 
 * Fixed "Color for Countries intersecting the current view" using a stale/inconsistent map extent: it was read from `iface.mapCanvas().extent()` *after* the project CRS had already been switched to the globe's custom orthographic projection, and the canvas isn't guaranteed to have recalculated its extent in the new CRS by that point — potentially selecting all, none, or the wrong countries. The view extent and CRS are now captured once, before any projection switch, and threaded through to the selection instead of being re-read late.
 
+### 0.7.3 - 10/08/2026
+
+* Fixed "Add the Globe to a Layout" showing a tiny, flat-looking crop instead of the full globe: the `QgsMapSettings` used to compute the map item's initial extent (`ms.fullExtent()`) never had its destination CRS set to the globe's orthographic projection, so the extent was computed in degrees (a geographic default) instead of metres, then applied as if it *were* in metres — zooming the map item in on a sliver right at the projection's centre. Added the missing `ms.setDestinationCrs(crs)` before computing the extent.
+
 ##
