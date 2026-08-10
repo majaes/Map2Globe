@@ -130,9 +130,6 @@ class Globe:
         self.iface.mapCanvas().refresh()
 
     def load_natural_earth_data(self, ne_data):
-        # TODO: resolution
-        existing_layer_names = self.get_existing_layer_names()
-
         connection_type = LayerConnectionType(
             get_setting("layerConnectionType", DEFAULT_LAYER_CONNECTION_TYPE.value, int))
 
@@ -143,20 +140,25 @@ class Globe:
 
         for name, data in ne_data.items():
             source, styling_method = data
-            if name not in existing_layer_names:
-                layer = QgsVectorLayer(os.path.join(root, source), name, "ogr")
-                if layer is None:
+            source_path = os.path.join(root, source)
+            existing = self.qgis_instance.mapLayersByName(name)
+            layer = existing[0] if existing else None
+
+            # Reload if the layer doesn't exist yet, or its source (e.g. resolution) changed
+            if layer is None or os.path.normpath(layer.source()) != os.path.normpath(source_path):
+                if layer is not None:
+                    self.qgis_instance.removeMapLayer(layer.id())
+                layer = QgsVectorLayer(source_path, name, "ogr")
+                if not layer.isValid():
                     layer = QgsVectorLayer(os.path.join(LOCAL_DATA_DIR, source), name, "ogr")
-                if layer is None:
+                if not layer.isValid():
                     self.iface.messageBar().pushMessage(
                         tr(u"Could not load Natural Earth layer '{}'", name),
                         level=Qgis.Warning, duration=3)
+                    layer = None
                 else:
                     layer.setName(name)
                     self.insert_layer_to_group(layer)
-
-            else:
-                layer = self.qgis_instance.mapLayersByName(name)[0]
 
             if styling_method is not None and layer is not None:
                 styling_method(layer)

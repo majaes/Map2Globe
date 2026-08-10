@@ -65,4 +65,8 @@
 
 * Fixed "Create new layout (LayoutGlobe)" deleting and recreating the "LayoutGlobe" print layout from scratch every time it was picked, discarding any manual page setup. `create_layout()` now reuses the existing "LayoutGlobe" layout if one already exists (same behavior as picking it by name from the dropdown), and only creates a brand new one if none exists yet.
 
+### 0.6.9 - 10/08/2026
+
+* Fixed changing the "Countries" resolution (e.g. 50m → 110m) having no effect once the layer already existed: `load_natural_earth_data()` matched layers by name only and reused whatever was already loaded regardless of the requested source file. It now compares the existing layer's source against the requested one and reloads it whenever they differ. Also fixed a related latent bug where a failed remote load was never detected (`QgsVectorLayer(...)` never returns `None`, even when invalid) so the local-data fallback never actually ran; now checked via `layer.isValid()`.
+
 ##
