@@ -40,4 +40,8 @@
 
 * Fixed `AttributeError: type object 'Qt' has no attribute 'black'` on QGIS 4.x (Qt6): PyQt6 requires scoped enum access (e.g. `Qt.GlobalColor.black` instead of `Qt.black`). Fully-qualified all previously-flat `Qt.*`, `QAbstractItemView.*` enum references in `definitions/settings.py`, `plugin.py`, `test/test_globe.py` and the vendored `qgis_plugin_tools` widgets
 
+### 0.6.3 - 10/08/2026
+
+* Declared `qgisMaximumVersion=4.99` in metadata.txt: without it, QGIS infers a max version of `3.99` from `qgisMinimumVersion=3.2`, which marked the plugin "invalid" on QGIS 4.x even though it now loads without error
+
 ##
