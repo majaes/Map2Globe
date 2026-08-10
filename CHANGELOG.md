@@ -77,4 +77,8 @@
 
 * Unified the two separate "background" color pickers into one: the "Background" swatch now also sets the print layout map item's background (representing water/ocean behind the countries), instead of the easy-to-miss, separately-defaulted "Globe Layout background" field (removed). Also explicitly enabled the layout map item's background (`setBackgroundEnabled(True)`), which was previously only ever set with a color but never turned on.
 
+### 0.7.2 - 10/08/2026
+
+* Fixed "Color for Countries intersecting the current view" using a stale/inconsistent map extent: it was read from `iface.mapCanvas().extent()` *after* the project CRS had already been switched to the globe's custom orthographic projection, and the canvas isn't guaranteed to have recalculated its extent in the new CRS by that point — potentially selecting all, none, or the wrong countries. The view extent and CRS are now captured once, before any projection switch, and threaded through to the selection instead of being re-read late.
+
 ##

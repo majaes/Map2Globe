@@ -89,7 +89,7 @@ class Globe:
         self.group.setItemVisibilityCheckedRecursive(is_visible)
 
     def load_data(self, load_s2, load_countries, load_graticules, countries_color, graticules_color,
-                  intersecting_countries_color, counties_res, graticules_res):
+                  intersecting_countries_color, counties_res, graticules_res, view_extent=None, view_crs=None):
         existing_layer_names = self.get_existing_layer_names()
         s2_cloudless_layer_name = tr(u'S2 Cloudless 2018')
         if load_s2 and s2_cloudless_layer_name not in existing_layer_names:
@@ -106,8 +106,9 @@ class Globe:
                     layer.renderer().symbol().setColor(countries_color)
                 else:
                     set_selection_based_style(layer, intersecting_countries_color, countries_color)
-                    ids = get_feature_ids_that_intersect_bbox(layer, self.iface.mapCanvas().extent(),
-                                                              self.qgis_instance.crs())
+                    extent = view_extent if view_extent is not None else self.iface.mapCanvas().extent()
+                    crs = view_crs if view_crs is not None else self.qgis_instance.crs()
+                    ids = get_feature_ids_that_intersect_bbox(layer, extent, crs)
                     layer.select(ids)
 
             ne_data[tr(u'Countries')] = (

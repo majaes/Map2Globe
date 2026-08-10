@@ -168,6 +168,11 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     @pyqtSlot()
     def on_pushButtonApplyVisualizations_clicked(self):
         if not self.is_initializing:
+            # Capture the view before any CRS switch below: the canvas extent isn't
+            # guaranteed to be recalculated in the new CRS right away, which could
+            # otherwise make the "intersecting current view" selection wrong.
+            view_extent = self.iface.mapCanvas().extent()
+            view_crs = self.qgis_instance.crs()
             coordinates = self.calculate_origin_coordinates()
             if coordinates != self.old_coordinates:
                 self.old_coordinates = coordinates
@@ -177,7 +182,7 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 self.old_projection = projection
                 self.globe.set_projection(projection)
                 self.globe.change_project_projection()
-            self.load_data_to_globe()
+            self.load_data_to_globe(view_extent=view_extent, view_crs=view_crs)
             self.globe.change_background_color(self.mColorButtonBackground.color())
             self.mColorButtonBackground.setColor(self.iface.mapCanvas().canvasColor())
             self.globe.set_group_visibility(True)
@@ -202,6 +207,9 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             filter(lambda l: l.name() == self.comboBoxLayouts.currentText(), self.layout_mngr.layouts()))
         layout = selected_layouts[0] if len(selected_layouts) == 1 else create_layout("LayoutGlobe", self.qgis_instance)
         crs = self.qgis_instance.crs()
+        # Capture the view before the CRS switch below, same reasoning as in
+        # on_pushButtonApplyVisualizations_clicked.
+        view_extent = self.iface.mapCanvas().extent()
 
         # For some reason layout mode can't handle azimuthal ortographic projection with any decimals and the
         # projection needs to be set to project level before attempting to use it in a layout
@@ -210,7 +218,7 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.globe.set_projection(Projections.proj_from_id(self.comboBoxProjections.currentText()))
         self.globe.change_temporarily_to_globe_projection()
         self.globe.delete_group()
-        self.load_data_to_globe()
+        self.load_data_to_globe(view_extent=view_extent, view_crs=crs)
 
         self.add_halo_to_globe()
         self.globe.set_group_visibility(False)
@@ -255,13 +263,15 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.geolocations = geolocations.copy()
         [self.listWidgetGeocodingResults.addItem(name) for name in self.geolocations.keys()]
 
-    def load_data_to_globe(self, possibly_use_intersecting_colors=True):
+    def load_data_to_globe(self, possibly_use_intersecting_colors=True, view_extent=None, view_crs=None):
         self.globe.load_data(self.checkBoxS2cloudless.isChecked(), self.checkBoxCountries.isChecked(),
                              self.checkBoxGraticules.isChecked(), self.mColorButtonCountries.color(),
                              self.mColorButtonGraticules.color(),
                              self.get_intersecting_countries_color() if possibly_use_intersecting_colors else None,
                              self.comboBoxCountries.currentText().split(" ")[-1],
-                             self.comboBoxGraticules.currentText().split(" ")[-1])
+                             self.comboBoxGraticules.currentText().split(" ")[-1],
+                             view_extent if view_extent is not None else self.iface.mapCanvas().extent(),
+                             view_crs if view_crs is not None else self.qgis_instance.crs())
 
     def get_geocoded_coordinates(self):
         coordinates = None
