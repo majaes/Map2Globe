@@ -61,4 +61,8 @@
 * Fixed Graticules color/resolution changes silently having no effect: `load_data()` only (re)created the Graticules layer if none existed yet, so once created it was never restyled again. It's now deleted and recreated on every call, same as Halo already was.
 * Fixed "Add the Globe to a Layout" stacking a brand new, identically-positioned map item on top of the layout on every click instead of updating the existing one — since the old (stale-looking) item was still there covering the new one, style/color changes appeared to never apply. `Globe.add_to_layout()` now reuses the existing map item (tracked via a stable item ID) and explicitly calls `refresh()` to force a redraw, only creating/positioning a new item the first time.
 
+### 0.6.8 - 10/08/2026
+
+* Fixed "Create new layout (LayoutGlobe)" deleting and recreating the "LayoutGlobe" print layout from scratch every time it was picked, discarding any manual page setup. `create_layout()` now reuses the existing "LayoutGlobe" layout if one already exists (same behavior as picking it by name from the dropdown), and only creates a brand new one if none exists yet.
+
 ##

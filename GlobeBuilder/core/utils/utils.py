@@ -27,12 +27,11 @@ from ...qgis_plugin_tools.tools.i18n import tr
 
 
 def create_layout(layout_name, qgis_instance):
+    """Return the existing layout named layout_name, or create a new one if none exists."""
     manager = qgis_instance.layoutManager()
-    layouts_list = manager.printLayouts()
-    # remove any duplicate layouts
-    for layout in layouts_list:
+    for layout in manager.printLayouts():
         if layout.name() == layout_name:
-            manager.removeLayout(layout)
+            return layout
     layout = QgsPrintLayout(qgis_instance)
     layout.initializeDefaults()
     layout.setName(layout_name)
