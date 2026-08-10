@@ -58,6 +58,8 @@ class GlobeBuilder:
         # Declare instance attributes
         self.actions = []
         self.menu = tr(u'&Globe Builder')
+        self.toolbar = self.iface.addToolBar(u'Globe Builder')
+        self.toolbar.setObjectName(u'GlobeBuilder')
 
         # Check if plugin was started the first time in current QGIS session
         # Must be set in initGui() to survive plugin reloads
@@ -142,8 +144,8 @@ class GlobeBuilder:
             action.setWhatsThis(whats_this)
 
         if add_to_toolbar:
-            # Adds plugin icon to Plugins toolbar
-            self.iface.addToolBarIcon(action)
+            # Adds plugin icon to the dedicated Globe Builder toolbar
+            self.toolbar.addAction(action)
 
         if add_to_menu:
             self.iface.addPluginToMenu(
@@ -187,7 +189,7 @@ class GlobeBuilder:
             self.iface.removePluginMenu(
                 tr(u'&Globe Builder'),
                 action)
-            self.iface.removeToolBarIcon(action)
+        del self.toolbar
         teardown_logger(plugin_name())
 
     def run(self):

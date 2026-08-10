@@ -44,4 +44,8 @@
 
 * Declared `qgisMaximumVersion=4.99` in metadata.txt: without it, QGIS infers a max version of `3.99` from `qgisMinimumVersion=3.2`, which marked the plugin "invalid" on QGIS 4.x even though it now loads without error
 
+### 0.6.4 - 10/08/2026
+
+* Added a dedicated "Globe Builder" toolbar (`iface.addToolBar`) instead of adding the plugin's icon to the generic Plugins toolbar, so it's visible as its own toggleable toolbar
+
 ##
