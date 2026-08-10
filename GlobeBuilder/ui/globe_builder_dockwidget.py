@@ -32,7 +32,7 @@ from ..definitions.projections import Projections
 from ..definitions.settings import (DEFAULT_MAX_NUMBER_OF_RESULTS, DEFAULT_USE_NE_COUNTRIES,
                                     DEFAULT_USE_NE_GRATICULES, DEFAULT_USE_S2_CLOUDLESS, DEFAULT_ORIGIN,
                                     DEFAULT_BACKGROUND_COLOR, DEFAULT_HALO_COLOR, DEFAULT_HALO_FILL_COLOR,
-                                    DEFAULT_LAYOUT_BACKGROUND_COLOR, DEFAULT_COUNTRIES_COLOR,
+                                    DEFAULT_COUNTRIES_COLOR,
                                     DEFAULT_GRATICULES_COLOR, DEFAULT_INTERSECTING_COUNTRIES_COLOR)
 from ..qgis_plugin_tools.tools.custom_logging import bar_msg
 from ..qgis_plugin_tools.tools.i18n import tr
@@ -88,7 +88,6 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.mColorButtonBackground.setColor(DEFAULT_BACKGROUND_COLOR)
         self.mColorButtonHalo.setColor(DEFAULT_HALO_COLOR)
         self.mColorButtonHFill.setColor(DEFAULT_HALO_FILL_COLOR)
-        self.mColorButtonLayoutBackground.setColor(DEFAULT_LAYOUT_BACKGROUND_COLOR)
         self.mColorButtonCountries.setColor(DEFAULT_COUNTRIES_COLOR)
         self.mColorButtonGraticules.setColor(DEFAULT_GRATICULES_COLOR)
         self.mColorButtonIntCountries.setColor(DEFAULT_INTERSECTING_COUNTRIES_COLOR)
@@ -216,7 +215,7 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.add_halo_to_globe()
         self.globe.set_group_visibility(False)
         self.globe.refresh_theme()
-        self.globe.add_to_layout(layout, background_color=self.mColorButtonLayoutBackground.color(),
+        self.globe.add_to_layout(layout, background_color=self.mColorButtonBackground.color(),
                                  size=self.spinBoxGlobeSize.value())
 
         self.qgis_instance.setCrs(crs)

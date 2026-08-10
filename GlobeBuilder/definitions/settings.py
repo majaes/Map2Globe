@@ -54,7 +54,6 @@ WGS84 = _crs
 
 # Colors
 DEFAULT_BACKGROUND_COLOR = QColor(Qt.GlobalColor.black)
-DEFAULT_LAYOUT_BACKGROUND_COLOR = QColor(Qt.GlobalColor.white)
 DEFAULT_COUNTRIES_COLOR = QColor(Qt.GlobalColor.darkGreen)
 DEFAULT_GRATICULES_COLOR = QColor(Qt.GlobalColor.gray)
 DEFAULT_HALO_COLOR = QColor(Qt.GlobalColor.lightGray)

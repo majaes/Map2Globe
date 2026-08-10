@@ -253,6 +253,7 @@ class Globe:
 
         ms.setExtent(rect)
         map.setExtent(rect)
+        map.setBackgroundEnabled(True)
         map.setBackgroundColor(background_color)
         if is_new_item:
             layout.addLayoutItem(map)

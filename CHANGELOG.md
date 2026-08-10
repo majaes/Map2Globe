@@ -73,4 +73,8 @@
 
 * Added a "None" option to "Halo type" so the globe can be built without any halo layer at all. Selecting it removes any existing Halo layer instead of creating one, and disables the now-irrelevant halo color pickers.
 
+### 0.7.1 - 10/08/2026
+
+* Unified the two separate "background" color pickers into one: the "Background" swatch now also sets the print layout map item's background (representing water/ocean behind the countries), instead of the easy-to-miss, separately-defaulted "Globe Layout background" field (removed). Also explicitly enabled the layout map item's background (`setBackgroundEnabled(True)`), which was previously only ever set with a color but never turned on.
+
 ##
