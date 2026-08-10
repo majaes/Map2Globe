@@ -117,7 +117,10 @@ class Globe:
             self.load_natural_earth_data(ne_data)
 
         gra = Graticules(graticules_res)
-        if load_graticules and gra.LAYER_NAME not in existing_layer_names:
+        if load_graticules:
+            # Recreate rather than reuse so a changed color/resolution is always applied
+            [self.qgis_instance.removeMapLayer(lyr.id()) for lyr in
+             self.qgis_instance.mapLayersByName(gra.LAYER_NAME)]
             graticule_layer = gra.create_graticules(graticules_color)
             if graticule_layer.isValid():
                 self.insert_layer_to_group(graticule_layer)
@@ -216,14 +219,22 @@ class Globe:
             map_theme_record.setLayerRecords([QgsMapThemeCollection.MapThemeLayerRecord(layer) for layer in layers])
             theme_collection.insert(Globe.THEME_NAME, map_theme_record)
 
+    LAYOUT_MAP_ITEM_ID = 'GlobeBuilderMap'
+
     def add_to_layout(self, layout, background_color=QColor(255, 255, 255, 0), size=80):
         """
         Inspired by https://opensourceoptions.com/blog/pyqgis-create-and-print-a-map-layout-with-python/
         """
         layers = [layer.layer() for layer in self.group.findLayers()]
-        # create map item in the layout
-        map = QgsLayoutItemMap(layout)
-        map.setRect(20, 20, 20, 20)
+        # Reuse the existing map item if this layout already has one, instead of stacking a
+        # new one on top of it on every click (which made style/color changes look like they
+        # weren't applied, since the old, unchanged item was still there covering the new one).
+        map = layout.itemById(Globe.LAYOUT_MAP_ITEM_ID)
+        is_new_item = map is None
+        if is_new_item:
+            map = QgsLayoutItemMap(layout)
+            map.setId(Globe.LAYOUT_MAP_ITEM_ID)
+            map.setRect(20, 20, 20, 20)
         # set the map extent
         ms = QgsMapSettings()
         ms.setLayers(layers)  # set layers to be mapped
@@ -238,6 +249,8 @@ class Globe:
         ms.setExtent(rect)
         map.setExtent(rect)
         map.setBackgroundColor(background_color)
-        layout.addLayoutItem(map)
-        map.attemptMove(QgsLayoutPoint(5, 20, QgsUnitTypes.LayoutMillimeters))
-        map.attemptResize(QgsLayoutSize(size, size, QgsUnitTypes.LayoutMillimeters))
+        if is_new_item:
+            layout.addLayoutItem(map)
+            map.attemptMove(QgsLayoutPoint(5, 20, QgsUnitTypes.LayoutMillimeters))
+            map.attemptResize(QgsLayoutSize(size, size, QgsUnitTypes.LayoutMillimeters))
+        map.refresh()

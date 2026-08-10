@@ -56,4 +56,9 @@
 
 * Fixed "Add the Globe to a Layout" deleting any layer the user had manually placed inside the "Globe" group: `Globe.delete_group()` unconditionally removed every child of the group before rebuilding it. It now only removes the plugin's own managed layers (Halo/Countries/Graticules/S2 Cloudless) by name, and no longer removes the group node itself, so manually added layers (e.g. a filtered/highlighted basemap) survive repeated clicks
 
+### 0.6.7 - 10/08/2026
+
+* Fixed Graticules color/resolution changes silently having no effect: `load_data()` only (re)created the Graticules layer if none existed yet, so once created it was never restyled again. It's now deleted and recreated on every call, same as Halo already was.
+* Fixed "Add the Globe to a Layout" stacking a brand new, identically-positioned map item on top of the layout on every click instead of updating the existing one — since the old (stale-looking) item was still there covering the new one, style/color changes appeared to never apply. `Globe.add_to_layout()` now reuses the existing map item (tracked via a stable item ID) and explicitly calls `refresh()` to force a redraw, only creating/positioning a new item the first time.
+
 ##
