@@ -34,7 +34,7 @@ from ..core.utils.utils import (create_layout, transform_to_wgs84, get_map_cente
 from ..definitions.projections import Projections
 from ..definitions.settings import (LOCAL_DATA_DIR, DEFAULT_MAX_NUMBER_OF_RESULTS, DEFAULT_USE_NE_COUNTRIES,
                                     DEFAULT_USE_NE_GRATICULES, DEFAULT_USE_S2_CLOUDLESS, DEFAULT_ORIGIN,
-                                    DEFAULT_BACKGROUND_COLOR, DEFAULT_HALO_COLOR, DEFAULT_HALO_FILL_COLOR,
+                                    DEFAULT_OCEANS_COLOR, DEFAULT_HALO_COLOR, DEFAULT_HALO_FILL_COLOR,
                                     DEFAULT_COUNTRIES_COLOR,
                                     DEFAULT_GRATICULES_COLOR, DEFAULT_INTERSECTING_COUNTRIES_COLOR)
 from ..qgis_plugin_tools.tools.custom_logging import bar_msg
@@ -94,7 +94,7 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.populate_comboBoxProjections()
         self.update_attributions()
 
-        self.mColorButtonBackground.setColor(DEFAULT_BACKGROUND_COLOR)
+        self.mColorButtonOceans.setColor(DEFAULT_OCEANS_COLOR)
         self.mColorButtonHalo.setColor(DEFAULT_HALO_COLOR)
         self.mColorButtonHFill.setColor(DEFAULT_HALO_FILL_COLOR)
         self.mColorButtonCountries.setColor(DEFAULT_COUNTRIES_COLOR)
@@ -263,10 +263,9 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             # to leave the canvas blank/flat after "Apply changes".
             self.globe.change_project_projection()
             self.load_data_to_globe(view_extent=view_extent, view_crs=view_crs)
-            self.globe.change_background_color(self.mColorButtonBackground.color())
-            self.mColorButtonBackground.setColor(self.iface.mapCanvas().canvasColor())
             self.globe.set_group_visibility(True)
             self.add_halo_to_globe()
+            self.add_oceans_to_globe()
             self.globe.zoom_to_globe()
 
     @pyqtSlot()
@@ -276,11 +275,10 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.globe.set_origin(self.old_coordinates)
         self.old_projection = Projections.proj_from_id(self.comboBoxProjections.currentText())
         self.globe.set_projection(self.old_projection)
-        self.globe.change_background_color(self.mColorButtonBackground.color())
-        self.mColorButtonBackground.setColor(self.iface.mapCanvas().canvasColor())
         self.globe.change_project_projection()
         self.globe.set_group_visibility(True)
         self.add_halo_to_globe()
+        self.add_oceans_to_globe()
         self.globe.zoom_to_globe()
 
     @pyqtSlot()
@@ -303,10 +301,11 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.load_data_to_globe(view_extent=view_extent, view_crs=crs)
 
         self.add_halo_to_globe()
+        self.add_oceans_to_globe()
         self.globe.set_group_visibility(False)
         self.globe.refresh_theme()
-        self.globe.add_to_layout(layout, background_color=self.mColorButtonBackground.color(),
-                                 size=self.spinBoxGlobeSize.value())
+        # The water colour comes from the Oceans layer, so the map item itself stays transparent
+        self.globe.add_to_layout(layout, size=self.spinBoxGlobeSize.value())
 
         self.qgis_instance.setCrs(crs)
 
@@ -325,6 +324,11 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         for projection in Projections:
             if proj_v >= projection.value.min_proj:
                 self.comboBoxProjections.addItem(projection.value.name)
+
+    def add_oceans_to_globe(self):
+        # Added after the halo so that it ends up at the very bottom of the group
+        self.globe.add_oceans(self.mColorButtonOceans.color())
+        self.globe.refresh_theme()
 
     def add_halo_to_globe(self):
         if self.radioButtonHNone.isChecked():

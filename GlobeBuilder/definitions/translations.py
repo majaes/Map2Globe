@@ -37,7 +37,7 @@ FR = {
     # --- UI: visualisation ---
     "  Fill": "  Remplissage",
     "  Line": "  Contour",
-    "Background": "Arrière-plan",
+    "Oceans": "Océans",
     "  Countries": "  Pays",
     "Optional visualizations": "Visualisations facultatives",
     "Halo type": "Type de halo",
@@ -105,7 +105,7 @@ TRANSLATIONS = {"fr": FR}
 # Identifiers that go through tr() with the default context (layer names) must stay as is,
 # even though the same words are translated when they come from the .ui file.
 IDENTIFIER_CONTEXT = "@default"
-IDENTIFIERS = {"Countries", "Graticules", "Halo", "Globe", "S2 Cloudless 2018"}
+IDENTIFIERS = {"Countries", "Graticules", "Halo", "Oceans", "Globe", "S2 Cloudless 2018"}
 
 
 class DictTranslator(QTranslator):

@@ -29,6 +29,7 @@ from qgis.core import (QgsProject, QgsCoordinateReferenceSystem, Qgis, QgsRaster
 
 from .graticules import Graticules
 from .halo import Halo
+from .oceans import Oceans
 from .utils.utils import set_selection_based_style, get_feature_ids_that_intersect_bbox, local_data_copy
 from ..definitions.projections import Projections
 from ..definitions.settings import (LayerConnectionType, S2CLOUDLESS_WMTS_URL, LOCAL_DATA_DIR,
@@ -66,7 +67,7 @@ class Globe:
 
     # Layer names the plugin itself creates and is therefore safe to delete/recreate.
     # Layers manually added to the group by the user (e.g. their own basemap) are left untouched.
-    MANAGED_LAYER_NAMES = {Halo.LAYER_NAME, Graticules.LAYER_NAME, tr(u'Countries'), tr(u'S2 Cloudless 2018')}
+    MANAGED_LAYER_NAMES = {Halo.LAYER_NAME, Oceans.LAYER_NAME, Graticules.LAYER_NAME, tr(u'Countries'), tr(u'S2 Cloudless 2018')}
 
     def delete_group(self):
         group = self.group
@@ -238,6 +239,20 @@ class Globe:
 
         layer, index = halo.create_halo_layer(use_effects, stroke_color, fill_color)
         self.insert_layer_to_group(layer, index)
+
+    def remove_oceans(self):
+        [self.qgis_instance.removeMapLayer(lyr.id()) for lyr in
+         self.qgis_instance.mapLayersByName(Oceans.LAYER_NAME)]
+
+    def add_oceans(self, color):
+        """(Re)create the Oceans layer at the very bottom of the Globe group.
+
+        This replaces the old approach of changing the QGIS canvas colour, which altered the
+        user's whole workspace.
+        """
+        self.remove_oceans()
+        layer = Oceans(self.iface, self.origin, self.projection).create_layer(color)
+        self.insert_layer_to_group(layer, -1)
 
     def refresh_theme(self):
         theme_collection = self.qgis_instance.mapThemeCollection()

@@ -100,6 +100,32 @@ def test_adding_halo(globe, qgis_iface, qgis_canvas):
     assert "Halo" in names
 
 
+def test_adding_oceans(globe, qgis_iface, qgis_canvas):
+    globe.add_halo(False, QColor(Qt.GlobalColor.blue))
+    globe.add_oceans(QColor('#a6cee3'))
+    names = get_existing_layer_names(qgis_iface, qgis_canvas)
+    assert "Oceans" in names
+    layers = [node.layer() for node in globe.group.findLayers()]
+    # at the very bottom, below the halo, and with the requested colour
+    assert layers[-1].name() == "Oceans"
+    assert layers[-1].renderer().symbol().color() == QColor('#a6cee3')
+    assert layers[-1].featureCount() == 1
+
+
+def test_oceans_are_replaced_not_duplicated(globe):
+    globe.add_oceans(QColor(Qt.GlobalColor.red))
+    globe.add_oceans(QColor(Qt.GlobalColor.green))
+    layers = QgsProject.instance().mapLayersByName("Oceans")
+    assert len(layers) == 1
+    assert layers[0].renderer().symbol().color() == QColor(Qt.GlobalColor.green)
+
+
+def test_adding_oceans_keeps_the_canvas_color(globe, qgis_canvas):
+    before = qgis_canvas.canvasColor()
+    globe.add_oceans(QColor('#a6cee3'))
+    assert qgis_canvas.canvasColor() == before
+
+
 def test_group(globe):
     group = globe.group
     children = QgsProject.instance().layerTreeRoot().children()

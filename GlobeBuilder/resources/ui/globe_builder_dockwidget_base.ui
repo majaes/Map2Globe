@@ -436,12 +436,12 @@
                    <item row="0" column="0">
                     <widget class="QLabel" name="label_6">
                      <property name="text">
-                      <string>Background</string>
+                      <string>Oceans</string>
                      </property>
                     </widget>
                    </item>
                    <item row="0" column="1">
-                    <widget class="QgsColorButton" name="mColorButtonBackground">
+                    <widget class="QgsColorButton" name="mColorButtonOceans">
                      <property name="allowOpacity">
                       <bool>true</bool>
                      </property>
