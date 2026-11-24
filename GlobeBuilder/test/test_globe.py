@@ -22,7 +22,7 @@
 import pytest
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QColor
-from qgis.core import QgsProject, QgsProcessingException, Qgis, QgsVectorLayer
+from qgis.core import QgsCoordinateReferenceSystem, QgsProject, QgsProcessingException, Qgis, QgsVectorLayer
 
 from ..core.globe import Globe
 from ..definitions.projections import Projections
@@ -160,6 +160,46 @@ def test_foreign_layers_in_the_group_are_not_a_globe(globe):
     QgsProject.instance().addMapLayer(layer, False)
     globe.group.insertLayer(0, layer)
     assert not Globe.exists_in_map()
+
+
+def test_remove_globe_deletes_the_plugin_layers_and_the_empty_group(globe):
+    globe.add_halo(False, QColor('#ffffff'), QColor('#a6cee3'), halo_with_fill=True)
+    assert Globe.exists_in_map()
+    globe.remove_globe()
+    assert Globe.find_group() is None
+    assert not Globe.exists_in_map()
+    assert not QgsProject.instance().mapLayersByName("Oceans")
+    assert not QgsProject.instance().mapLayersByName("Halo")
+
+
+def test_remove_globe_keeps_layers_added_by_the_user(globe):
+    own = QgsVectorLayer("Polygon", "my own layer", "memory")
+    QgsProject.instance().addMapLayer(own, False)
+    globe.group.insertLayer(0, own)
+    globe.add_halo(False, QColor('#ffffff'), QColor('#a6cee3'))
+    globe.remove_globe()
+    group = Globe.find_group()
+    assert group is not None
+    assert [node.layer().name() for node in group.findLayers()] == ["my own layer"]
+
+
+def test_remove_globe_restores_the_flat_projection(globe):
+    QgsProject.instance().setCrs(QgsCoordinateReferenceSystem("EPSG:3857"))
+    globe.remember_flat_state()
+    globe.add_halo(False, QColor('#ffffff'), QColor('#a6cee3'))
+    globe.change_project_projection()
+    assert QgsProject.instance().crs().authid() == ""  # the custom globe CRS
+    globe.remember_flat_state()  # building again must not "remember" the globe CRS
+    globe.remove_globe()
+    assert QgsProject.instance().crs().authid() == "EPSG:3857"
+    assert not QgsProject.instance().readEntry("GlobeBuilder", "flat_crs", "")[1]
+
+
+def test_remove_globe_without_remembered_state_falls_back_to_wgs84(globe):
+    globe.add_halo(False, QColor('#ffffff'), QColor('#a6cee3'))
+    globe.change_project_projection()
+    globe.remove_globe()
+    assert QgsProject.instance().crs().authid() == "EPSG:4326"
 
 
 def test_adding_oceans_keeps_the_canvas_color(globe, qgis_canvas):

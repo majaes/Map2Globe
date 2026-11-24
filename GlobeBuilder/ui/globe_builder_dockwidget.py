@@ -106,10 +106,10 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                        self.qgis_instance.layerTreeRoot().removedChildren,
                        self.qgis_instance.layerTreeRoot().visibilityChanged,
                        self.qgis_instance.cleared, self.qgis_instance.readProject):
-            signal.connect(self.update_apply_button_state)
+            signal.connect(self.update_buttons_state)
         self.comboBoxProjections.currentTextChanged.connect(self.projection_changed)
 
-        self.update_apply_button_state()
+        self.update_buttons_state()
         self.is_initializing = False
 
     def make_panel_compact(self):
@@ -238,10 +238,18 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             return
         if not Globe.exists_in_map():
             self.show_warning(tr(u"There is no globe to update yet: add the globe to the map first"))
-            self.update_apply_button_state()
+            self.update_buttons_state()
             return
         self.update_map_globe()
-        self.update_apply_button_state()
+        self.update_buttons_state()
+
+    @pyqtSlot()
+    def on_pushButtonCancel_clicked(self):
+        """Remove the globe and give the map back its flat projection and view."""
+        if Globe.exists_in_map():
+            self.globe.suspend_auto_crs_setup()
+            self.globe.remove_globe()
+        self.update_buttons_state()
 
     def update_map_globe(self):
         self.globe.suspend_auto_crs_setup()
@@ -263,6 +271,7 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     @pyqtSlot()
     def on_pushButtonRun_clicked(self):
         self.globe.suspend_auto_crs_setup()
+        self.globe.remember_flat_state()
         self.load_data_to_globe()
         self.old_coordinates = self.calculate_origin_coordinates()
         self.globe.set_origin(self.old_coordinates)
@@ -272,14 +281,17 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.globe.set_group_visibility(True)
         self.add_halo_to_globe()
         self.globe.zoom_to_globe()
-        self.update_apply_button_state()
+        self.update_buttons_state()
 
-    def update_apply_button_state(self, *args):
-        """"Apply changes" only makes sense when a globe already exists in the map."""
+    def update_buttons_state(self, *args):
+        """"Apply changes" and "Cancel the globe" only make sense when a globe already exists in the map."""
         has_globe = Globe.exists_in_map()
         self.pushButtonApplyVisualizations.setEnabled(has_globe)
         self.pushButtonApplyVisualizations.setToolTip(
             "" if has_globe else tr(u"Add the globe to the map first: there is nothing to update yet"))
+        self.pushButtonCancel.setEnabled(has_globe)
+        self.pushButtonCancel.setToolTip(
+            tr(u"Remove the globe and restore the flat map") if has_globe else tr(u"There is no globe to cancel"))
 
     def populate_comboBoxProjections(self, *args):
         try:

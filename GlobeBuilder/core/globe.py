@@ -208,6 +208,72 @@ class Globe:
                 layer.triggerRepaint()
                 self.refresh_legend(layer)
 
+    # Project entries (saved with the project) remembering the flat map, to restore it with "Cancel the globe"
+    FLAT_STATE_SCOPE = "GlobeBuilder"
+
+    def remember_flat_state(self):
+        """Remember the flat map (project CRS and view) before it is turned into a globe.
+
+        An existing entry is kept while the project is still in a custom (globe) CRS, so that building the
+        globe several times doesn't make us "remember" the globe itself.
+        """
+        crs = self.qgis_instance.crs()
+        is_flat = crs.isValid() and crs.authid() != ""
+        has_entry = self.qgis_instance.readEntry(Globe.FLAT_STATE_SCOPE, "flat_crs", "")[1]
+        if has_entry and not is_flat:
+            return
+        definition = ("auth:" + crs.authid()) if is_flat else ("proj:" + crs.toProj() if crs.isValid() else "")
+        self.qgis_instance.writeEntry(Globe.FLAT_STATE_SCOPE, "flat_crs", definition)
+        extent = self.iface.mapCanvas().extent()
+        self.qgis_instance.writeEntry(
+            Globe.FLAT_STATE_SCOPE, "flat_extent",
+            "" if extent.isNull() or extent.isEmpty() else
+            "{},{},{},{}".format(extent.xMinimum(), extent.yMinimum(), extent.xMaximum(), extent.yMaximum()))
+
+    def _remembered_crs(self):
+        definition = self.qgis_instance.readEntry(Globe.FLAT_STATE_SCOPE, "flat_crs", "")[0]
+        crs = QgsCoordinateReferenceSystem()
+        if definition.startswith("auth:"):
+            crs = QgsCoordinateReferenceSystem(definition[len("auth:"):])
+        elif definition.startswith("proj:"):
+            crs.createFromProj(definition[len("proj:"):])
+        return crs if crs.isValid() else WGS84
+
+    def _remembered_extent(self):
+        text = self.qgis_instance.readEntry(Globe.FLAT_STATE_SCOPE, "flat_extent", "")[0]
+        try:
+            x_min, y_min, x_max, y_max = (float(v) for v in text.split(","))
+        except ValueError:
+            return None
+        rect = QgsRectangle(x_min, y_min, x_max, y_max)
+        return None if rect.isEmpty() else rect
+
+    def remove_globe(self):
+        """Remove the layers built by the plugin and give the map back its flat projection and view.
+
+        Layers the user put in the Globe group are left alone (the group is then kept too).
+        """
+        group = Globe.find_group()
+        if group is not None:
+            managed = Globe.managed_layer_names()
+            for node in list(group.findLayers()):
+                layer = node.layer()
+                if layer is not None and layer.name() in managed:
+                    self.qgis_instance.removeMapLayer(layer.id())
+            if not group.children():
+                self.qgis_instance.layerTreeRoot().removeChildNode(group)
+
+        self.qgis_instance.setCrs(self._remembered_crs())
+        canvas = self.iface.mapCanvas()
+        rect = self._remembered_extent()
+        if rect is not None:
+            canvas.setExtent(rect)
+        else:
+            canvas.zoomToFullExtent()
+        canvas.refresh()
+        for key in ("flat_crs", "flat_extent"):
+            self.qgis_instance.removeEntry(Globe.FLAT_STATE_SCOPE, key)
+
     def refresh_legend(self, layer):
         """Update the layer's symbol in the Layers panel.
 
