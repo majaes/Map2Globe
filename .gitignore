@@ -38,7 +38,7 @@ pip-delete-this-directory.txt
 # Unit test / coverage reports
 htmlcov/
 .tox/
-GlobeBuilder/.coverage
+Map2Globe/.coverage
 .coverage.*
 .cache
 nosetests.xml
@@ -104,8 +104,8 @@ ENV/
 
 # Projects specifig
 .idea
-GlobeBuilder.iml
+Map2Globe.iml
 /icon_large.xcf
-/GlobeBuilder.zip
-/GlobeBuilder/i18n/
+/Map2Globe.zip
+/Map2Globe/i18n/
 .qgis-settings/

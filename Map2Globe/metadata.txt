@@ -1,0 +1,43 @@
+# This file contains metadata for the Map2Globe QGIS plugin.
+# It is read by QGIS and by the QGIS plugin repository (plugins.qgis.org).
+
+[general]
+name=Map2Globe
+qgisMinimumVersion=4.0
+qgisMaximumVersion=4.99
+supportsQt6=True
+description=Made for location and situation maps: switch your QGIS map to a globe (azimuthal orthographic projection) and back to a flat map with one click.
+version=1.0.0
+author=ANABA MANGA
+email=
+
+about=Map2Globe is designed first of all to make <b>location and situation maps</b> (locator maps): show where a country, a region or a place is on the globe. It turns the map of your QGIS project into a globe, and back into a flat map, with one click.<br><br><b>Features</b><br>- Countries (Natural Earth data bundled with the plugin: works offline), graticules, oceans and halo, and optional Sentinel-2 cloudless imagery.<br>- Center the globe on the current view, a country, a layer, coordinates or an address.<br>- Colours and styles can be changed, then applied to the existing globe.<br>- "Switch the map to flat" gives back the flat map and keeps the plugin's layers.<br>- French and English interface (FR / EN toggle).<br><br><b>Data and licences</b><br>Natural Earth data: public domain (<a href="https://www.naturalearthdata.com">naturalearthdata.com</a>). The address search uses the <a href="https://wiki.openstreetmap.org/wiki/Nominatim">OpenStreetMap Nominatim</a> API, limited to one request per second by the plugin. Sentinel-2 cloudless by EOX IT Services GmbH (contains modified Copernicus Sentinel data 2017 and 2018) is licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>: non-commercial use only; for commercial use see <a href="https://cloudless.eox.at">cloudless.eox.at</a>.<br><br>Created by ANABA MANGA (<a href="https://anbmng.com">anbmng.com</a>). Based on the GlobeBuilder plugin by Gispo Ltd., released under the GPL.
+
+tracker=https://github.com/majaes/Globe_builder_QGIS/issues
+repository=https://github.com/majaes/Globe_builder_QGIS
+homepage=https://github.com/majaes/Globe_builder_QGIS
+# End of mandatory metadata
+
+# Recommended items:
+
+hasProcessingProvider=no
+changelog=1.0.0 - First release of Map2Globe, made for location and situation maps
+    - Switch the map to a globe and back to a flat map, keeping the plugin's layers
+    - Countries, graticules, oceans, halo and optional Sentinel-2 cloudless imagery
+    - Center on the current view, a country, a layer, coordinates or an address (1 request per second)
+    - Named globe projection, French / English interface with a toggle
+
+# Tags are comma separated with spaces allowed
+tags=globe, location map, situation map, locator map, projection, orthographic, world, countries, geocoding, natural earth
+
+category=Plugins
+icon=resources/icon.png
+
+# experimental flag
+experimental=False
+
+# deprecated flag (applies to the whole plugin, not just a single version)
+deprecated=False
+
+# If the plugin can run on QGIS Server.
+server=False

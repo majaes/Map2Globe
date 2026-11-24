@@ -1,5 +1,3 @@
-plugin_path: GlobeBuilder
-github_organization_slug: GispoCoding
-project_slug: GlobeBuilder
-transifex_coordinator: Joonalai
-transifex_organization: gispo
+plugin_path: Map2Globe
+github_organization_slug: majaes
+project_slug: Globe_builder_QGIS

@@ -1,0 +1,21 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pull QGIS
+        run: docker pull qgis/qgis:latest
+
+      - name: Run the tests in the QGIS image
+        run: >
+          docker run --rm --volume "$PWD":/app -w /app -e QGIS_PLUGIN_IN_CI=1 qgis/qgis:latest sh -c
+          "pip3 install --break-system-packages -qr requirements-dev.txt &&
+          xvfb-run -s '+extension GLX -screen 0 1024x768x24' pytest -v Map2Globe/test"

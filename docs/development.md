@@ -1,69 +1,65 @@
-Development of GlobeBuilder plugin
-===========================
+Development of the Map2Globe plugin
+====================================
 
-The code for the plugin is in the [Qaava](../GlobeBuilder) folder. Make sure you have required tools, such as
-Qt with Qt Editor and Qt Linquist installed by following this 
-[tutorial](https://www.qgistutorials.com/en/docs/3/building_a_python_plugin.html#get-the-tools). 
+The code of the plugin is in the [Map2Globe](../Map2Globe) folder. Python files use **relative imports**:
 
-For building the plugin use platform independent [build.py](../GlobeBuilder/build.py) script. 
-
-### Adding or editing  source files
-If you create or edit source files make sure that:
-* they contain relative imports
-    ```python
-    '''file GlobeBuilder/database_tools/db_initializer.py'''
-    
-    from ..utils.exceptions import GlobeBuilderAuthConfigException # Good
-    
-    from GlobeBuilder.utils.exceptions import GlobeBuilderAuthConfigException # Bad
-    ```
-* they will be found by [build.py](../GlobeBuilder/build.py) script (`py_files` and `ui_files` values)
-* you consider adding test files for the new functionality
-
-### Deployment
-
-Edit [build.py](../GlobeBuilder/build.py) to contain working values for *profile*, *lrelease* and *pyrcc*. 
-If you are running on Windows, make sure the value *QGIS_INSTALLATION_DIR* points to right folder
-
-Run the deployment with:
-```shell script
-python build.py deploy
+```python
+from ..core.globe import Globe          # Good
+from Map2Globe.core.globe import Globe  # Bad
 ```
 
-After deploying and restarting QGIS you should see the plugin in the QGIS installed plugins
-where you have to activate it.
+## Layout
 
-#### Testing
-Install Docker, docker-compose and python packages listed in [requirements.txt](requirements.txt) 
-to run tests with:
+* `Map2Globe/plugin.py`: the QGIS plugin class (toolbar, menu, panel).
+* `Map2Globe/ui/map2globe_dockwidget.py` and `Map2Globe/resources/ui/map2globe_dockwidget_base.ui`: the panel.
+* `Map2Globe/core/`: building and switching the globe (`globe.py`), halo/oceans, graticules, geocoding.
+* `Map2Globe/definitions/`: settings, projections, translations and the language switch (`language.py`).
+* `Map2Globe/test/`: the tests.
+* `dev/`: development tools (harness, zip build).
 
-```shell script
-python build.py test
+## Tests
+
+Install `pytest` and `pytest-qgis` for the Python of QGIS (see `requirements-dev.txt`) and run, from the repository
+root, with the Python of QGIS:
+
+```powershell
+$env:QT_QPA_PLATFORM="offscreen"; & "C:\Program Files\QGIS 4.0.1\bin\python-qgis.bat" -m pytest Map2Globe/test -q
 ```
 
-#### Translating
+## Trying the panel without reloading QGIS
 
-The translation files are in [i18n](../GlobeBuilder/resources/i18n) folder.
-Translatable content in python files is code such as `tr(u"Hello World")`. 
+`dev/harness.py` opens the panel next to a real map canvas and layers panel, outside QGIS:
 
-To update language *.ts* files to contain newest lines to translate, run
-```shell script
-python build.py transup
+```powershell
+& "C:\Program Files\QGIS 4.0.1\bin\python-qgis.bat" dev\harness.py --fr
 ```
 
-You can then open the *.ts* files you wish to translate with Qt Linguist and make the changes.
+`--fr` uses the French interface (English by default), `--auto file.png` clicks "Switch the map to a globe", saves a
+screenshot and quits.
 
-Compile the translations to *.qm* files with:
-```shell script
-python build.py transcompile
+## Translations
+
+The plugin is bilingual. The translations are plain Python dictionaries in
+`Map2Globe/definitions/translations.py` (no `.ts` / `.qm` files to compile): the key is the English text, the value its
+translation. Add every new `tr(u"...")` text and every text of the `.ui` file there. `definitions/language.py` installs
+the translator, remembers the choice made with the FR / EN toggle and renames the generated layers.
+
+To add a language, add its dictionary to `TRANSLATIONS`, its code to `LANGUAGES` and a button in
+`setup_language_buttons()` of the panel.
+
+## Building the release zip
+
+Always build the zip with the script, never by hand: it zips every tracked file of the plugin (a new module cannot be
+forgotten) and then imports the plugin from the extracted zip as QGIS does.
+
+```powershell
+& "C:\Program Files\QGIS 4.0.1\bin\python-qgis.bat" dev\build_zip.py
 ```
 
-### Creating a release
-Follow these steps to create a release
-* Add changelog information to [CHANGELOG.md](../CHANGELOG.md) using this
-[format](https://raw.githubusercontent.com/opengisch/qgis-plugin-ci/master/CHANGELOG.md)
-* Make a new commit. (`git add -A && git commit -m "Release v0.1.0"`)
-* Create new tag for it (`git tag -a v0.1.0 -m "Version 0.1.0"`)
-* Push tag to Github using `git push --follow-tags`
-* Create Github release
-* [qgis-plugin-ci](https://github.com/opengisch/qgis-plugin-ci) adds release zip automatically as an asset
+The result is `releases/Map2Globe-<version>.zip`. The version is the one of `Map2Globe/metadata.txt`.
+
+## Publishing on the QGIS plugin repository
+
+1. Check `Map2Globe/metadata.txt` (version, changelog, author, e-mail, repository URLs).
+2. Build the zip with `dev/build_zip.py`.
+3. Upload it at https://plugins.qgis.org/plugins/add/ with an OSGeo account.

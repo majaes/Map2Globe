@@ -5,8 +5,8 @@ Run from the repository root with the QGIS Python (needed for the check):
 
     & "C:\\Program Files\\QGIS 4.0.1\\bin\\python-qgis.bat" dev\\build_zip.py
 
-The zip contains every tracked file of the GlobeBuilder folder except tests and git configuration files, so a
-new module can never be forgotten (it once was: "No module named GlobeBuilder.definitions.language").
+The zip contains every file of the Map2Globe folder that git tracks or would track (new files included, ignored files not), except tests and hidden/git files, so a
+new module can never be forgotten (it once was: "No module named Map2Globe.definitions.language").
 After building, the zip is extracted to a temporary folder and the plugin's main module is imported from there
 in a fresh interpreter, the way QGIS does it.
 """
@@ -19,8 +19,8 @@ import tempfile
 import zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PLUGIN_DIR = "GlobeBuilder"
-EXCLUDED = re.compile(r"(^|/)(test|\.github)(/|$)|(^|/)\.git[^/]*$|^GlobeBuilder/logs/\.gitignore$")
+PLUGIN_DIR = "Map2Globe"
+EXCLUDED = re.compile(r"(^|/)(test|\.github)(/|$)|(^|/)\.[^/]*$|^Map2Globe/logs/\.gitignore$")
 
 
 def version():
@@ -38,7 +38,7 @@ def find_git():
 def tracked_files():
     git = find_git()
     if git:
-        out = subprocess.run([git, "ls-files", PLUGIN_DIR], cwd=ROOT, capture_output=True, text=True, check=True)
+        out = subprocess.run([git, "ls-files", "--cached", "--others", "--exclude-standard", PLUGIN_DIR], cwd=ROOT, capture_output=True, text=True, check=True)
         names = [p for p in out.stdout.splitlines() if p]
     else:  # no git available: walk the folder, skipping generated files
         names = []
@@ -71,10 +71,10 @@ def check(path):
             "sys.path.insert(0, sys.argv[1])\n"
             "from qgis.core import QgsApplication\n"
             "app = QgsApplication([], False); app.initQgis()\n"
-            "import GlobeBuilder\n"
-            "from GlobeBuilder.plugin import GlobeBuilder as Plugin\n"
-            "from GlobeBuilder.ui.globe_builder_dockwidget import GlobeBuilderDockWidget\n"
-            "print('plugin modules import OK:', GlobeBuilder.__file__)\n"
+            "import Map2Globe\n"
+            "from Map2Globe.plugin import Map2Globe as Plugin\n"
+            "from Map2Globe.ui.map2globe_dockwidget import Map2GlobeDockWidget\n"
+            "print('plugin modules import OK:', Map2Globe.__file__)\n"
         )
         result = subprocess.run([sys.executable, "-c", code, folder], capture_output=True, text=True, cwd=folder)
         if result.returncode != 0:
@@ -84,7 +84,8 @@ def check(path):
 
 if __name__ == "__main__":
     target_dir = os.path.join(ROOT, "releases")
-    zip_path = os.path.join(target_dir, "GlobeBuilder-{}-qt6fix.zip".format(version()))
+    os.makedirs(target_dir, exist_ok=True)
+    zip_path = os.path.join(target_dir, "Map2Globe-{}.zip".format(version()))
     built = build(zip_path)
     print("built {} ({} files)".format(os.path.relpath(zip_path, ROOT), len(built)))
     if "--no-check" not in sys.argv:

@@ -1,58 +1,66 @@
-Globe Builder
-=============
-![](https://github.com/GispoCoding/GlobeBuilder/workflows/Tests/badge.svg)
-[![codecov.io](https://codecov.io/github/GispoCoding/GlobeBuilder/coverage.svg?branch=master)](https://codecov.io/github/GispoCoding/GlobeBuilder?branch=master)
-![](https://github.com/GispoCoding/GlobeBuilder/workflows/Release/badge.svg)
-![](https://github.com/GispoCoding/GlobeBuilder/workflows/Translations/badge.svg)
-[![GPLv2 license](https://img.shields.io/badge/License-GPLv2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
+Map2Globe
+=========
 
-QGIS 3 plugin that is meant for adding globe visualization to the current map using.
+**Location and situation maps made easy: switch your QGIS map to a globe and back to a flat map with one click.**
 
-![Plugin in action](/images/screenshots/geocoding1.gif?raw=true "Plugin in action")
+Map2Globe is designed first of all to make **location maps and situation maps** (locator maps): it shows where a
+country, a region or a place is on the globe. It builds a globe (azimuthal orthographic projection, "the world from space") from the countries of Natural
+Earth and turns the map of your QGIS project into that globe. You can switch back to the flat map at any time, the
+layers built by the plugin are kept.
 
-Inspired by these blog posts by 
-* [statsmapsnpix](http://www.statsmapsnpix.com/2019/09/globe-projections-and-insets-in-qgis.html)
-* [Gispo](https://www.gispo.fi/en/blog/the-power-of-community-30daymapchallenge/)
-* [gislounge](https://www.gislounge.com/how-to-use-the-equal-earth-projection-using-qgis-on-the-mac/)
+*Map2Globe est conçu avant tout pour réaliser des **cartes de situation et de localisation** : il montre où se trouve
+un pays, une région ou un lieu sur le globe. Il transforme la carte de votre projet QGIS en globe, et inversement, en
+un clic. L'interface est en français et en anglais (bouton FR / EN).*
 
+## Features
 
-The plugin is still in beta-development. Please report issues preferably to Issues.
+* **Switch the map to a globe / to flat**, keeping the plugin's layers and restoring the previous projection and view.
+* Layers: **countries** (Natural Earth, bundled: works offline), **graticules**, **oceans**, **halo** and optional
+  **Sentinel-2 cloudless** imagery.
+* **Centre the globe** on the current view, a country (searchable list), a layer, coordinates or an address.
+* Colours and styles can be changed, then applied to the existing globe with **Apply changes**.
+* The globe's projection is named *Map2Globe - Azimuthal Orthographic* instead of "unknown CRS".
+* **French and English** interface (FR / EN toggle at the top of the panel). The generated layers follow the language.
 
-**Developed by [Gispo Ltd.](https://www.gispo.fi/en/home/)**
+## Requirements
 
-## Installation instructions
-### QGIS Plugin
-The plugin can be installed trough QGIS Plugins Repository. It can also be installed by downloading a release from this 
-repository:
+QGIS 4.0 or later (developed and tested on QGIS 4.0.1). The address search and the Sentinel-2 layer need an Internet
+connection; everything else works offline.
 
-1. Download the latest release zip from GitHub releases (above).
+## Installation
 
-2. Launch QGIS and the plugins menu by selecting Plugins - Manage and Install Plugins from the top menu.
-
-3. Select the Install from ZIP tab, browse to the zip file you just downloaded, and click Install Plugin!
-
+* **From QGIS**: Plugins > Manage and Install Plugins, search for *Map2Globe* (once published in the official plugin
+  repository).
+* **From a ZIP**: download `Map2Globe-1.0.0.zip` from the [releases](releases) folder, then Plugins > Manage and Install
+  Plugins > Install from ZIP.
 
 ## Usage
 
-The Globe is added to the current map. To use it in a print layout, add the map to the layout with QGIS' own "Add Map" tool.
+1. Open the panel with the globe button of the Map2Globe toolbar or the *Plugins > Map2Globe* menu.
+2. Choose the data sources, the projection and what to centre the globe on.
+3. Click **Switch the map to a globe**.
+4. Change the colours or the centre, then click **Apply changes** to update the globe.
+5. Click **Switch the map to flat** to go back to a flat map (the plugin's layers are kept).
 
-## Gist
-There is also a Github [Gist](https://gist.github.com/Joonalai/7b8693ef904df75cb15cb9af0e82c032) that 
-provides the core functionality of the plugin. The usage can be seen in the following gif.
+To use the globe in a print layout, add the map with the layout's own *Add Map* tool: it shows the map drawn in the
+workspace.
 
-![Gist in action](/images/screenshots/globe_view_gist.gif?raw=true "Gist in action")
+## Data and licences
 
+* [Natural Earth](https://www.naturalearthdata.com): public domain.
+* Address search: [OpenStreetMap Nominatim](https://wiki.openstreetmap.org/wiki/Nominatim) API. The plugin never sends
+  more than one request per second, as the usage policy requires.
+* Sentinel-2 cloudless by [EOX IT Services GmbH](https://s2maps.eu) (contains modified Copernicus Sentinel data 2017
+  and 2018), licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/): **non-commercial use
+  only**; for commercial use see [cloudless.eox.at](https://cloudless.eox.at).
+
+## Credits and licence
+
+Created by [ANABA MANGA](https://anbmng.com). Based on the GlobeBuilder plugin by Gispo Ltd. and its contributors.
+
+Map2Globe is free software released under the GNU General Public License, version 2 or (at your option) any later
+version, see [LICENSE](LICENSE).
 
 ## Development
 
-Refer to [development instructions](docs/development.md).
-
-## Licence
-
-This plugin is licenced with [GNU Genereal Public License, version 2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html).
-This plugin uses <a href="https://wiki.openstreetmap.org/wiki/Nominatim">OpenStreetMap Nominatim</a> geocoding API. 
-The OpenStreetMap data is licensed under <a href="https://opendatacommons.org/licenses/odbl/">ODbL license</a>. 
-This plugin lists Sentinel-2 cloudless as an optional data source. Sentinel-2 cloudless data by
-by EOX IT Services GmbH (Contains modified Copernicus Sentinel data 2017 & 2018) released under 
-[Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License](https://creativecommons.org/licenses/by-nc-sa/4.0/). 
-For commercial usage of Sentinel-2 cloudless please see https://cloudless.eox.at.
+See [docs/development.md](docs/development.md).

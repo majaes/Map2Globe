@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-"""Standalone dev harness: opens the Globe Builder panel next to a real map canvas, without QGIS.
+"""Standalone dev harness: opens the Map2Globe panel next to a real map canvas, without QGIS.
 
 Run with the QGIS Python (no plugin install / reload needed, just re-run after each edit):
 
     & "C:\\Program Files\\QGIS 4.0.1\\bin\\python-qgis.bat" dev\\harness.py [--fr] [--auto out.png]
 
   --fr          install the French translation (as the plugin does when QGIS is in French)
-  --auto FILE   click "Add the Globe to a Map", save a screenshot of the window to FILE and quit
+  --auto FILE   click "Switch the map to a globe", save a screenshot of the window to FILE and quit
                 (handy for a quick visual check, also works headless with QT_QPA_PLATFORM=offscreen)
 """
 import argparse
@@ -39,10 +39,10 @@ from qgis.analysis import QgsNativeAlgorithms  # noqa: E402
 Processing.initialize()
 QgsApplication.processingRegistry().addProvider(QgsNativeAlgorithms())
 
-from GlobeBuilder.definitions.language import set_language
+from Map2Globe.definitions.language import set_language
 set_language("fr" if args.fr else "en", remember=False)
 
-from GlobeBuilder.ui.globe_builder_dockwidget import GlobeBuilderDockWidget  # noqa: E402
+from Map2Globe.ui.map2globe_dockwidget import Map2GlobeDockWidget  # noqa: E402
 
 
 class FakeIface:
@@ -65,7 +65,7 @@ class FakeIface:
 
 
 window = QMainWindow()
-window.setWindowTitle("Globe Builder - dev harness")
+window.setWindowTitle("Map2Globe - dev harness")
 window.resize(1400, 850)
 canvas = QgsMapCanvas()
 canvas.setCanvasColor(Qt.GlobalColor.white)
@@ -89,7 +89,7 @@ window.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, layers_dock)
 
 iface = FakeIface(window, canvas, bar, bridge)
 iface.layerTreeView = lambda: layer_view
-dock = GlobeBuilderDockWidget(iface)
+dock = Map2GlobeDockWidget(iface)
 window.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock)
 window.resizeDocks([dock], [540], Qt.Orientation.Horizontal)
 window.show()
