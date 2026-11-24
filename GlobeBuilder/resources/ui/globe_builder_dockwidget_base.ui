@@ -638,7 +638,7 @@
       <item>
        <widget class="QgsCollapsibleGroupBox" name="groupBox_6">
         <property name="title">
-         <string>Attributions</string>
+         <string>Credits</string>
         </property>
         <property name="collapsed">
          <bool>true</bool>

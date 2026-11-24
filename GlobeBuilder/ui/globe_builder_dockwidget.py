@@ -131,14 +131,11 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.groupBox_6.setCollapsed(True)
         self.scrollArea.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
 
-    ATTRIBUTION_OSM = (
-        u'This plugin uses the <a href="https://wiki.openstreetmap.org/wiki/Nominatim">OpenStreetMap Nominatim</a> '
-        u'geocoding API. Please <b>use a maximum of 1 geocoding request per second</b>. '
-        u'OpenStreetMap data &copy; OpenStreetMap contributors, licensed under the '
-        u'<a href="https://opendatacommons.org/licenses/odbl/">ODbL</a>.')
-    ATTRIBUTION_NE = (
-        u'Made with Natural Earth. Free vector and raster map data from '
-        u'<a href="https://www.naturalearthdata.com">naturalearthdata.com</a>.')
+    ATTRIBUTION_DATA = (
+        u'The free vector and raster map data used come from the '
+        u'<a href="https://wiki.openstreetmap.org/wiki/Nominatim">OpenStreetMap Nominatim</a> geocoding API '
+        u'and from <a href="https://www.naturalearthdata.com">naturalearthdata.com</a>.')
+    AUTHOR_CREDIT = u'<a href="https://anbmng.com">By ANABA MANGA</a>'
     ATTRIBUTION_S2 = (
         u'Sentinel-2 cloudless data from <a href="https://s2maps.eu/">s2maps.eu</a> by EOX IT Services GmbH '
         u'(contains modified Copernicus Sentinel data 2017 &amp; 2018), licensed under '
@@ -147,10 +144,11 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         u'<a href="https://cloudless.eox.at">cloudless.eox.at</a>.')
 
     def update_attributions(self):
-        """Show only the attributions that apply: Sentinel-2's only when that layer is enabled."""
-        parts = [tr(self.ATTRIBUTION_OSM), tr(self.ATTRIBUTION_NE)]
+        """The credits: data sources, the Sentinel-2 licence notice only when that layer is enabled, the author."""
+        parts = [tr(self.ATTRIBUTION_DATA)]
         if self.checkBoxS2cloudless.isChecked():
             parts.append(tr(self.ATTRIBUTION_S2))
+        parts.append(self.AUTHOR_CREDIT)
         self.label_5.setText("<p>" + "</p><p>".join(parts) + "</p>")
 
     def setup_name_search(self):

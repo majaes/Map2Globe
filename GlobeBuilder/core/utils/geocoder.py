@@ -21,8 +21,9 @@
 
 import json
 import logging
+import time
 
-from qgis.PyQt.QtCore import QUrl, QUrlQuery
+from qgis.PyQt.QtCore import QTimer, QUrl, QUrlQuery
 from qgis.PyQt.QtNetwork import QNetworkRequest, QNetworkReply, QNetworkAccessManager
 from qgis.core import Qgis, QgsMessageLog
 
@@ -42,6 +43,10 @@ except AttributeError:  # pragma: no cover
 USER_AGENT = "GlobeBuilder-QGIS-plugin (+https://github.com/GispoCoding/GlobeBuilder)"
 
 
+# Nominatim's usage policy allows at most one request per second
+MIN_REQUEST_INTERVAL_MS = 1000
+
+
 class Geocoder:
     """Nominatim geocoder.
 
@@ -55,6 +60,9 @@ class Geocoder:
         self.network_access_manager.finished.connect(self.on_search_response)
         self.callback = callback
         self.error_callback = error_callback
+        self._last_request_time = None  # time.monotonic() of the last request sent
+        self._pending = None  # (query, max_results) waiting for its turn
+        self._timer_scheduled = False
 
     @staticmethod
     def build_url(query, max_results):
@@ -67,7 +75,38 @@ class Geocoder:
         url.setQuery(url_query)
         return url
 
+    def delay_before_next_request(self, now):
+        """Milliseconds to wait before a request may be sent at time `now` (time.monotonic() seconds)."""
+        if self._last_request_time is None:
+            return 0
+        elapsed_ms = (now - self._last_request_time) * 1000
+        return max(0, int(MIN_REQUEST_INTERVAL_MS - elapsed_ms) + 1)
+
     def geocode(self, query, max_results):
+        """Search an address, never sending more than one request per second.
+
+        A search started too soon after the previous request waits for its turn; if several searches pile up
+        meanwhile, only the latest one is sent.
+        """
+        self._pending = (query, max_results)
+        self._send_pending()
+
+    def _send_pending(self):
+        self._timer_scheduled = False
+        if self._pending is None:
+            return
+        wait_ms = self.delay_before_next_request(time.monotonic())
+        if wait_ms > 0:
+            if not self._timer_scheduled:
+                self._timer_scheduled = True
+                QTimer.singleShot(wait_ms, self._send_pending)
+            return
+        query, max_results = self._pending
+        self._pending = None
+        self._last_request_time = time.monotonic()
+        self._do_request(query, max_results)
+
+    def _do_request(self, query, max_results):
         url = self.build_url(query.strip(), max_results)
         QgsMessageLog.logMessage(url.toString(), "GlobeBuilder", Qgis.Info)
         geocoding_request = QNetworkRequest(url)
