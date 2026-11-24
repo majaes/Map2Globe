@@ -14,12 +14,12 @@ _state = {"code": None, "translator": None}
 
 
 def default_language(locale):
-    """French if QGIS runs in French, English otherwise."""
-    return "fr" if str(locale).lower().startswith("fr") else "en"
+    """English by default, whatever the QGIS locale: French is only used once chosen with the FR / EN toggle."""
+    return "en"
 
 
 def stored_language(locale):
-    """The language chosen with the FR/EN toggle, or the one matching QGIS' locale if none was chosen yet."""
+    """The language chosen with the FR/EN toggle, or English if none was chosen yet."""
     code = get_setting(SETTING_KEY, "", str)
     return code if code in LANGUAGES else default_language(locale)
 

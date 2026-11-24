@@ -20,7 +20,7 @@ un clic. L'interface est en français et en anglais (bouton FR / EN).*
 * **Centre the globe** on the current view, a country (searchable list), a layer, coordinates or an address.
 * Colours and styles can be changed, then applied to the existing globe with **Apply changes**.
 * The globe's projection is named *Map2Globe - Azimuthal Orthographic* instead of "unknown CRS".
-* **French and English** interface (FR / EN toggle at the top of the panel). The generated layers follow the language.
+* **French and English** interface (FR / EN toggle at the top of the panel; English by default). The generated layers follow the language.
 
 ## Requirements
 

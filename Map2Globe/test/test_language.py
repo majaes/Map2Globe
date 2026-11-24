@@ -20,9 +20,9 @@ def english_afterwards():
     set_language("en", remember=False)
 
 
-def test_default_language_follows_the_qgis_locale():
-    assert default_language("fr_FR") == "fr" and default_language("fr") == "fr"
-    assert default_language("en_GB") == "en" and default_language("de_DE") == "en" and default_language("") == "en"
+def test_default_language_is_english_whatever_the_qgis_locale():
+    for locale in ("fr_FR", "fr", "en_GB", "de_DE", ""):
+        assert default_language(locale) == "en"
 
 
 def test_switching_language_changes_tr():
@@ -41,9 +41,11 @@ def test_unknown_language_is_refused():
 
 def test_the_choice_is_remembered_between_sessions():
     set_language("fr")
-    assert language.stored_language("en_GB") == "fr"  # the toggle wins over QGIS' locale
+    assert language.stored_language("en_GB") == "fr"  # the toggle wins
     set_language("en")
     assert language.stored_language("fr_FR") == "en"
+    language.set_setting(language.SETTING_KEY, "")
+    assert language.stored_language("fr_FR") == "en"  # nothing chosen yet: English
 
 
 def test_only_the_plugin_strings_are_translated():
