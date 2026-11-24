@@ -261,6 +261,17 @@ class Globe:
         rect = QgsRectangle(x_min, y_min, x_max, y_max)
         return None if rect.isEmpty() else rect
 
+    @staticmethod
+    def hide_globe_shaped_layers():
+        """Hide the Halo and Oceans layers (discs built for the globe's projection, deformed on a flat map)."""
+        group = Globe.find_group()
+        if group is None:
+            return
+        globe_shaped = all_names(u'Halo') | all_names(u'Oceans')
+        for node in group.findLayers():
+            if node.layer() is not None and node.layer().name() in globe_shaped and node.itemVisibilityChecked():
+                node.setItemVisibilityChecked(False)
+
     def show_flat_map(self):
         """Switch from the globe back to the flat map, keeping the plugin's layers.
 
@@ -268,12 +279,7 @@ class Globe:
         the globe's projection and look wrong on a flat map, so they are hidden (not deleted); the other
         layers (countries, graticules...) stay visible. Building the globe again makes everything visible.
         """
-        group = Globe.find_group()
-        if group is not None:
-            globe_shaped = all_names(u'Halo') | all_names(u'Oceans')
-            for node in group.findLayers():
-                if node.layer() is not None and node.layer().name() in globe_shaped:
-                    node.setItemVisibilityChecked(False)
+        Globe.hide_globe_shaped_layers()
 
         self.qgis_instance.setCrs(self._remembered_crs())
         canvas = self.iface.mapCanvas()

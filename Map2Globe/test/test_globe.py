@@ -177,6 +177,15 @@ def test_flat_map_keeps_the_plugin_layers_and_hides_the_globe_shaped_ones(globe)
     assert not Globe.exists_in_map()  # the map is flat again: "Apply changes" must be disabled
 
 
+def test_globe_shaped_layers_are_hidden_when_the_map_is_flat_by_any_means(globe):
+    globe.add_halo(False, QColor('#ffffff'), QColor('#a6cee3'), halo_with_fill=True)
+    globe.change_project_projection()
+    # The user changes the CRS by hand (not with the plugin's button): the helper still hides the discs
+    QgsProject.instance().setCrs(QgsCoordinateReferenceSystem("EPSG:4326"))
+    Globe.hide_globe_shaped_layers()
+    assert all(not node.itemVisibilityChecked() for node in globe.group.findLayers())
+
+
 def test_flat_map_keeps_layers_added_by_the_user(globe):
     own = QgsVectorLayer("Polygon", "my own layer", "memory")
     QgsProject.instance().addMapLayer(own, False)

@@ -114,6 +114,10 @@ class Map2GlobeDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                        self.qgis_instance.crsChanged):
             signal.connect(self.update_buttons_state)
         self.comboBoxProjections.currentTextChanged.connect(self.projection_changed)
+        # Whatever way the map becomes flat (our button, the CRS selector, another project), the disc-shaped
+        # Halo / Oceans layers must not stay visible: they are deformed outside the globe's projection.
+        self.qgis_instance.crsChanged.connect(self.hide_globe_layers_on_flat_map)
+        self.qgis_instance.readProject.connect(self.hide_globe_layers_on_flat_map)
 
         self.update_buttons_state()
         self.is_initializing = False
@@ -370,6 +374,10 @@ class Map2GlobeDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.add_halo_to_globe()
         self.globe.zoom_to_globe()
         self.update_buttons_state()
+
+    def hide_globe_layers_on_flat_map(self, *args):
+        if not Globe.is_globe_crs(self.qgis_instance.crs()):
+            Globe.hide_globe_shaped_layers()
 
     def update_buttons_state(self, *args):
         """"Apply changes" and "Switch the map to flat" only make sense while the map shows a globe."""
