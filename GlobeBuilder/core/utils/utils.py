@@ -23,7 +23,7 @@ import os
 import shutil
 import tempfile
 
-from qgis.core import QgsApplication, QgsPrintLayout, QgsFillSymbol, QgsRuleBasedRenderer, QgsFeatureRequest, \
+from qgis.core import QgsApplication, QgsFillSymbol, QgsRuleBasedRenderer, QgsFeatureRequest, \
     QgsCoordinateTransformContext, QgsCoordinateTransform, QgsGeometry, QgsProject, QgsRectangle, \
     QgsVectorLayer, QgsWkbTypes
 
@@ -53,19 +53,6 @@ def local_data_copy(source_path):
         return target
     except OSError:
         return source_path
-
-
-def create_layout(layout_name, qgis_instance):
-    """Return the existing layout named layout_name, or create a new one if none exists."""
-    manager = qgis_instance.layoutManager()
-    for layout in manager.printLayouts():
-        if layout.name() == layout_name:
-            return layout
-    layout = QgsPrintLayout(qgis_instance)
-    layout.initializeDefaults()
-    layout.setName(layout_name)
-    manager.addLayout(layout)
-    return layout
 
 
 def set_selection_based_style(layer, s_color, else_color):

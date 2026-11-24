@@ -25,7 +25,6 @@ from qgis.PyQt.QtGui import QColor
 from qgis.core import QgsProject, QgsProcessingException, Qgis, QgsVectorLayer
 
 from ..core.globe import Globe
-from ..core.utils.utils import create_layout
 from ..definitions.projections import Projections
 from ..definitions.settings import (DEFAULT_ORIGIN, DEFAULT_COUNTRIES_COLOR, DEFAULT_HALO_COLOR,
                                     DEFAULT_HALO_FILL_COLOR)
@@ -143,7 +142,6 @@ def test_remove_halo_removes_halo_and_oceans(globe):
 def test_no_globe_in_an_empty_project(globe):
     assert Globe.find_group() is None
     assert not Globe.exists_in_map()
-    assert Globe.layouts_with_globe(QgsProject.instance().layoutManager()) == []
     # the check must not create the group as a side effect
     assert Globe.find_group() is None
 
@@ -164,16 +162,6 @@ def test_foreign_layers_in_the_group_are_not_a_globe(globe):
     assert not Globe.exists_in_map()
 
 
-def test_layout_with_globe_is_detected(globe):
-    manager = QgsProject.instance().layoutManager()
-    layout = create_layout("LayoutGlobe", QgsProject.instance())
-    assert Globe.layouts_with_globe(manager) == []
-    globe.add_halo(False, QColor('#ffffff'), QColor('#a6cee3'))
-    globe.refresh_theme()
-    globe.add_to_layout(layout)
-    assert Globe.layouts_with_globe(manager) == [layout]
-
-
 def test_adding_oceans_keeps_the_canvas_color(globe, qgis_canvas):
     before = qgis_canvas.canvasColor()
     globe.add_halo(False, QColor('#ffffff'), QColor('#a6cee3'))
@@ -190,29 +178,6 @@ def test_group(globe):
     group = globe.group
     children = QgsProject.instance().layerTreeRoot().children()
     assert group in children
-
-
-def test_group_deletion(globe):
-    group = globe.group
-    globe.delete_group()
-    children = QgsProject.instance().layerTreeRoot().children()
-    # The group itself is kept (not removed) so that layers the user manually
-    # placed inside it are not orphaned; only the plugin's own managed layers
-    # (Halo/Countries/Graticules/S2 Cloudless) are cleared out.
-    assert group in children
-    assert len(group.children()) == 0
-
-
-@pytest.mark.skip('TODO: figure way to test processing')
-def test_theme_exist_if_items_in_group(globe):
-    globe.load_data(False, False, True, QColor(Qt.GlobalColor.blue), QColor(Qt.GlobalColor.blue), None, '50m', 10)
-    globe.refresh_theme()
-    assert Globe.THEME_NAME in QgsProject.instance().mapThemeCollection().mapThemes()
-
-
-def test_theme_doesnt_exist_group_is_empty(globe):
-    globe.refresh_theme()
-    assert Globe.THEME_NAME not in QgsProject.instance().mapThemeCollection().mapThemes()
 
 
 def get_existing_layer_names(qgis_iface, qgis_canvas):

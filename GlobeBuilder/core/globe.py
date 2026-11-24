@@ -23,10 +23,8 @@ import logging
 import os
 
 from qgis.PyQt.QtCore import QTimer
-from qgis.PyQt.QtGui import QColor
 from qgis.core import (QgsProject, QgsCoordinateReferenceSystem, Qgis, QgsRasterLayer, QgsVectorLayer,
-                       QgsMapThemeCollection, QgsLayoutItemMap,
-                       QgsMapSettings, QgsRectangle, QgsLayoutPoint, QgsUnitTypes, QgsLayoutSize)
+                       QgsMapSettings, QgsRectangle)
 
 from .graticules import Graticules
 from .halo import Halo
@@ -45,7 +43,6 @@ LOGGER = logging.getLogger(plugin_name())
 
 
 class Globe:
-    THEME_NAME = tr('Globe')
     GROUP_NAME = tr('Globe')
 
     def __init__(self, iface, origin=DEFAULT_ORIGIN, projection=Projections.AZIMUTHAL_ORTHOGRAPHIC):
@@ -117,22 +114,6 @@ class Globe:
         nodes = [node for node in group.findLayers()
                  if node.layer() is not None and node.layer().name() in Globe.MANAGED_LAYER_NAMES]
         return bool(nodes) and group.itemVisibilityChecked() and any(n.itemVisibilityChecked() for n in nodes)
-
-    @staticmethod
-    def layouts_with_globe(layout_manager):
-        """The print layouts that already contain a globe map item created by the plugin."""
-        return [layout for layout in layout_manager.printLayouts()
-                if layout.itemById(Globe.LAYOUT_MAP_ITEM_ID) is not None]
-
-    def delete_group(self):
-        group = self.group
-        if group is not None:
-            for child in list(group.children()):
-                dump = child.dump()
-                layer_id = dump.split("=")[-1].strip()
-                layer = self.qgis_instance.mapLayer(layer_id)
-                if layer is not None and layer.name() in Globe.MANAGED_LAYER_NAMES:
-                    self.qgis_instance.removeMapLayer(layer_id)
 
     def set_origin(self, coordinates):
         if coordinates is not None:
@@ -259,11 +240,6 @@ class Globe:
         canvas.setExtent(rect)
         canvas.refresh()
 
-    def change_temporarily_to_globe_projection(self):
-        crs = self.qgis_instance.crs()
-        self.change_project_projection()
-        self.qgis_instance.setCrs(crs)
-
     def change_background_color(self, new_background_color):
         # Write it to the project (will still need to be saved!)
         self.qgis_instance.writeEntry("Gui", "/CanvasColorRedPart", new_background_color.red())
@@ -294,55 +270,3 @@ class Globe:
 
         layer, index = halo.create_halo_layer(use_effects, stroke_color, fill_color)
         self.insert_layer_to_group(layer, index)
-
-    def refresh_theme(self):
-        theme_collection = self.qgis_instance.mapThemeCollection()
-        layers = [layer.layer() for layer in self.group.findLayers()]
-        if Globe.THEME_NAME in theme_collection.mapThemes():
-            theme_collection.removeMapTheme(Globe.THEME_NAME)
-        if len(layers):
-            map_theme_record = QgsMapThemeCollection.MapThemeRecord()
-            map_theme_record.setLayerRecords([QgsMapThemeCollection.MapThemeLayerRecord(layer) for layer in layers])
-            theme_collection.insert(Globe.THEME_NAME, map_theme_record)
-
-    LAYOUT_MAP_ITEM_ID = 'GlobeBuilderMap'
-
-    def add_to_layout(self, layout, background_color=QColor(255, 255, 255, 0), size=80):
-        """
-        Inspired by https://opensourceoptions.com/blog/pyqgis-create-and-print-a-map-layout-with-python/
-        """
-        layers = [layer.layer() for layer in self.group.findLayers()]
-        # Reuse the existing map item if this layout already has one, instead of stacking a
-        # new one on top of it on every click (which made style/color changes look like they
-        # weren't applied, since the old, unchanged item was still there covering the new one).
-        map = layout.itemById(Globe.LAYOUT_MAP_ITEM_ID)
-        is_new_item = map is None
-        if is_new_item:
-            map = QgsLayoutItemMap(layout)
-            map.setId(Globe.LAYOUT_MAP_ITEM_ID)
-            map.setRect(20, 20, 20, 20)
-        # set the map extent
-        ms = QgsMapSettings()
-        ms.setLayers(layers)  # set layers to be mapped
-        crs = QgsCoordinateReferenceSystem()
-        if not crs.createFromProj(self.projection.value.proj_str(self.origin)):
-            LOGGER.warning(tr(u"Could not create the globe's custom projection"), extra=bar_msg())
-        # Without this, fullExtent() below is computed in QgsMapSettings' default CRS
-        # (geographic, degree-range) instead of the globe's orthographic CRS (metre-range),
-        # so the resulting rect -- applied as if it were in metres -- was tiny: the map item
-        # ended up zoomed in on a sliver right at the projection centre instead of the globe.
-        ms.setDestinationCrs(crs)
-        map.setCrs(crs)
-        map.setFollowVisibilityPreset(True)
-        map.setFollowVisibilityPresetName(Globe.THEME_NAME)
-        rect = QgsRectangle(ms.fullExtent())
-
-        ms.setExtent(rect)
-        map.setExtent(rect)
-        map.setBackgroundEnabled(True)
-        map.setBackgroundColor(background_color)
-        if is_new_item:
-            layout.addLayoutItem(map)
-            map.attemptMove(QgsLayoutPoint(5, 20, QgsUnitTypes.LayoutMillimeters))
-            map.attemptResize(QgsLayoutSize(size, size, QgsUnitTypes.LayoutMillimeters))
-        map.refresh()

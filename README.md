@@ -34,9 +34,7 @@ repository:
 
 ## Usage
 
-The Globe could be added either to the current map or to a layout.
-
-![Plugin in layout mode](/images/screenshots/layout1.gif?raw=true "Plugin in layout mode")
+The Globe is added to the current map. To use it in a print layout, add the map to the layout with QGIS' own "Add Map" tool.
 
 ## Gist
 There is also a Github [Gist](https://gist.github.com/Joonalai/7b8693ef904df75cb15cb9af0e82c032) that 

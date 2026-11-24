@@ -29,7 +29,7 @@ from qgis.core import Qgis, QgsProject
 
 from ..core.globe import Globe
 from ..core.utils.geocoder import Geocoder
-from ..core.utils.utils import (create_layout, transform_to_wgs84, get_map_center_coordinates,
+from ..core.utils.utils import (transform_to_wgs84, get_map_center_coordinates,
                                 load_name_centers, local_data_copy)
 from ..definitions.projections import Projections
 from ..definitions.settings import (LOCAL_DATA_DIR, DEFAULT_MAX_NUMBER_OF_RESULTS, DEFAULT_USE_NE_COUNTRIES,
@@ -68,7 +68,6 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.iface = iface
         # noinspection PyArgumentList
         self.qgis_instance = QgsProject.instance()
-        self.layout_mngr = self.qgis_instance.layoutManager()
         self.globe = Globe(iface)
         self.geocoder = Geocoder(lambda results: self.on_geocoding_finished(results),
                                  lambda message: self.show_warning(message))
@@ -90,7 +89,6 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.on_radioButtonHNone_toggled(self.radioButtonHNone.isChecked())
         self.on_checkBoxIntCountries_stateChanged()
 
-        self.populate_comboBoxLayouts()
         self.populate_comboBoxProjections()
         self.update_attributions()
 
@@ -105,12 +103,8 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.old_projection = Projections.proj_from_id(self.comboBoxProjections.currentText())
 
         # connections
-        self.layout_mngr.layoutAdded.connect(self.populate_comboBoxLayouts)
-        self.layout_mngr.layoutRemoved.connect(self.populate_comboBoxLayouts)
-        self.layout_mngr.layoutRenamed.connect(self.populate_comboBoxLayouts)
         # keep "Apply changes" in sync with the existence of a globe
-        for signal in (self.layout_mngr.layoutAdded, self.layout_mngr.layoutRemoved,
-                       self.qgis_instance.layerTreeRoot().addedChildren,
+        for signal in (self.qgis_instance.layerTreeRoot().addedChildren,
                        self.qgis_instance.layerTreeRoot().removedChildren,
                        self.qgis_instance.layerTreeRoot().visibilityChanged,
                        self.qgis_instance.cleared, self.qgis_instance.readProject):
@@ -124,7 +118,7 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         """Let long texts shrink/wrap so the panel needs no horizontal scrollbar."""
         for label in (self.label_2, self.label_3, self.label_4):
             label.setWordWrap(True)
-        for combo in (self.comboBoxLayouts, self.comboBoxProjections, self.comboBoxCountries,
+        for combo in (self.comboBoxProjections, self.comboBoxCountries,
                       self.comboBoxGraticules):
             combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
             combo.setMinimumContentsLength(8)
@@ -252,20 +246,14 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
     @pyqtSlot()
     def on_pushButtonApplyVisualizations_clicked(self):
-        """Update the globe(s) that already exist. Never builds anything in a workspace without a globe."""
+        """Update the globe that already exists in the map. Never builds anything in a workspace without one."""
         if self.is_initializing:
             return
-        layouts = Globe.layouts_with_globe(self.layout_mngr)
-        in_map = Globe.exists_in_map()
-        if not layouts and not in_map:
-            self.show_warning(tr(u"There is no globe to update yet: add the globe to a map or to a layout first"))
+        if not Globe.exists_in_map():
+            self.show_warning(tr(u"There is no globe to update yet: add the globe to the map first"))
             self.update_apply_button_state()
             return
-        # Layouts first: updating a layout hides the map's globe group again
-        for layout in layouts:
-            self.update_layout_globe(layout)
-        if in_map:
-            self.update_map_globe()
+        self.update_map_globe()
         self.update_apply_button_state()
 
     def update_map_globe(self):
@@ -304,51 +292,12 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.globe.zoom_to_globe()
         self.update_apply_button_state()
 
-    @pyqtSlot()
-    def on_pushButtonAddToLayout_clicked(self):
-        selected_layouts = tuple(
-            filter(lambda l: l.name() == self.comboBoxLayouts.currentText(), self.layout_mngr.layouts()))
-        layout = selected_layouts[0] if len(selected_layouts) == 1 else create_layout("LayoutGlobe", self.qgis_instance)
-        self.update_layout_globe(layout)
-        self.update_apply_button_state()
-
-    def update_layout_globe(self, layout):
-        self.globe.suspend_auto_crs_setup()
-        coordinates = self.calculate_origin_coordinates()
-        if coordinates is None:
-            return
-        crs = self.qgis_instance.crs()
-        # Capture the view before the CRS switch below, same reasoning as in update_map_globe.
-        view_extent = self.iface.mapCanvas().extent()
-
-        # For some reason layout mode can't handle azimuthal ortographic projection with any decimals and the
-        # projection needs to be set to project level before attempting to use it in a layout
-        self.globe.set_origin({key: float("{:.0f}".format(val)) for key, val in coordinates.items()})
-        self.globe.set_projection(Projections.proj_from_id(self.comboBoxProjections.currentText()))
-        self.globe.change_temporarily_to_globe_projection()
-        self.globe.delete_group()
-        self.load_data_to_globe(view_extent=view_extent, view_crs=crs)
-
-        self.add_halo_to_globe()
-        self.globe.set_group_visibility(False)
-        self.globe.refresh_theme()
-        # The water colour comes from the Oceans (halo) layer, so the map item itself stays transparent
-        self.globe.add_to_layout(layout, size=self.spinBoxGlobeSize.value())
-
-        self.qgis_instance.setCrs(crs)
-
     def update_apply_button_state(self, *args):
-        """"Apply changes" only makes sense when a globe (in the map or in a layout) already exists."""
-        has_globe = Globe.exists_in_map() or bool(Globe.layouts_with_globe(self.layout_mngr))
+        """"Apply changes" only makes sense when a globe already exists in the map."""
+        has_globe = Globe.exists_in_map()
         self.pushButtonApplyVisualizations.setEnabled(has_globe)
         self.pushButtonApplyVisualizations.setToolTip(
-            "" if has_globe else tr(u"Add the globe to a map or to a layout first: there is nothing to update yet"))
-
-    def populate_comboBoxLayouts(self, *args):
-        self.comboBoxLayouts.clear()
-        self.comboBoxLayouts.addItem(tr(u"Create new layout (LayoutGlobe)"))
-        for layout in self.layout_mngr.layouts():
-            self.comboBoxLayouts.addItem(layout.name())
+            "" if has_globe else tr(u"Add the globe to the map first: there is nothing to update yet"))
 
     def populate_comboBoxProjections(self, *args):
         try:
@@ -366,7 +315,6 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         else:
             self.globe.add_halo(self.radioButtonHHalo.isChecked(), self.mColorButtonHalo.color(),
                                 self.get_halo_fill_color(), self.radioButtonHFillWithHalo.isChecked())
-        self.globe.refresh_theme()
 
     def get_halo_fill_color(self):
         return self.mColorButtonHFill.color() if (

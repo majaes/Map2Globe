@@ -17,7 +17,7 @@ FR = {
     "Data sources (optional)": "Sources de données (facultatif)",
     "Center the Globe based on:": "Centrer le globe sur :",
     "Visualization": "Visualisation",
-    "Layout": "Mise en page",
+    "Options": "Options",
     # --- UI: sources de données ---
     "Countries": "Pays",
     "Graticules": "Graticules",
@@ -46,12 +46,9 @@ FR = {
     "Outline, with oceans": "Contour, avec océans",
     "None": "Aucun",
     # --- UI: mise en page ---
-    "Map composer:": "Composeur de cartes :",
     "Color for Countries intersecting the current view": "Couleur des pays croisant la vue actuelle",
-    "Globe size in mm": "Taille du globe en mm",
     "Apply changes": "Appliquer les modifications",
     "Add the Globe to a Map": "Ajouter le globe à la carte",
-    "Add the Globe to a Layout": "Ajouter le globe à une mise en page",
     # --- Attributions ---
     'This plugin uses the <a href="https://wiki.openstreetmap.org/wiki/Nominatim">OpenStreetMap Nominatim</a> '
     'geocoding API. Please <b>use a maximum of 1 geocoding request per second</b>. '
@@ -80,7 +77,6 @@ FR = {
     "Hammer & Eckert-Greifendorff": "Hammer et Eckert-Greifendorff",
     # --- Menus et messages ---
     "Build Globe view": "Construire la vue globe",
-    "Create new layout (LayoutGlobe)": "Créer une nouvelle mise en page (LayoutGlobe)",
     "Selected": "Sélectionné",
     "Not Selected": "Non sélectionné",
     "Could not add Sentinel 2 Cloudless layer": "Impossible d'ajouter la couche Sentinel-2 sans nuages",
@@ -96,10 +92,10 @@ FR = {
     "Geocoding failed: {}": "Échec du géocodage : {}",
     "Geocoding failed: unexpected answer from the server": "Échec du géocodage : réponse inattendue du serveur",
     "No place found for this address": "Aucun lieu trouvé pour cette adresse",
-    "There is no globe to update yet: add the globe to a map or to a layout first":
-        "Il n’y a pas encore de globe à mettre à jour : ajoutez d’abord le globe à la carte ou à une mise en page",
-    "Add the globe to a map or to a layout first: there is nothing to update yet":
-        "Ajoutez d’abord le globe à la carte ou à une mise en page : il n’y a encore rien à mettre à jour",
+    "There is no globe to update yet: add the globe to the map first":
+        "Il n’y a pas encore de globe à mettre à jour : ajoutez d’abord le globe à la carte",
+    "Add the globe to the map first: there is nothing to update yet":
+        "Ajoutez d’abord le globe à la carte : il n’y a encore rien à mettre à jour",
     "Traceback": "Détail de l'erreur",
 }
 
