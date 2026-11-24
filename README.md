@@ -3,6 +3,8 @@ Map2Globe
 
 **Location and situation maps made easy: switch your QGIS map to a globe and back to a flat map with one click.**
 
+![QGIS Plugin](https://img.shields.io/badge/QGIS-Plugin-589632?logo=qgis&logoColor=white) ![version](https://img.shields.io/badge/version-1.0.0-0f6fb5) ![QGIS 4](https://img.shields.io/badge/QGIS-4.0%2B-589632) ![Qt 6](https://img.shields.io/badge/Qt-6-41cd52?logo=qt&logoColor=white) ![license](https://img.shields.io/badge/license-GPLv2%2B-e07b39) ![languages](https://img.shields.io/badge/interface-FR%20%2F%20EN-555)
+
 *A plugin created, designed and maintained by [ANABA MANGA](https://anbmng.com).*
 
 Map2Globe is designed first of all to make **location maps and situation maps** (locator maps): it shows where a
