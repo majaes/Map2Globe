@@ -1,0 +1,97 @@
+# -*- coding: utf-8 -*-
+"""Standalone dev harness: opens the Globe Builder panel next to a real map canvas, without QGIS.
+
+Run with the QGIS Python (no plugin install / reload needed, just re-run after each edit):
+
+    & "C:\\Program Files\\QGIS 4.0.1\\bin\\python-qgis.bat" dev\\harness.py [--fr] [--auto out.png]
+
+  --fr          install the French translation (as the plugin does when QGIS is in French)
+  --auto FILE   click "Add the Globe to a Map", save a screenshot of the window to FILE and quit
+                (handy for a quick visual check, also works headless with QT_QPA_PLATFORM=offscreen)
+"""
+import argparse
+import os
+import sys
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT)
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--fr", action="store_true")
+parser.add_argument("--auto", metavar="FILE")
+args = parser.parse_args()
+
+from qgis.core import QgsApplication, QgsProject
+from qgis.gui import QgsMapCanvas, QgsLayerTreeMapCanvasBridge, QgsMessageBar
+from qgis.PyQt.QtCore import Qt, QTimer, QCoreApplication
+from qgis.PyQt.QtWidgets import QMainWindow
+
+app = QgsApplication([], True)
+app.initQgis()
+
+# Processing is needed to build the graticules (it is available inside real QGIS).
+qgis_plugins = os.path.join(QgsApplication.pkgDataPath(), "python", "plugins")
+sys.path.append(qgis_plugins)
+import processing  # noqa: E402
+from processing.core.Processing import Processing  # noqa: E402
+from qgis.analysis import QgsNativeAlgorithms  # noqa: E402
+
+Processing.initialize()
+QgsApplication.processingRegistry().addProvider(QgsNativeAlgorithms())
+
+if args.fr:
+    from GlobeBuilder.definitions.translations import TRANSLATIONS, DictTranslator
+    translator = DictTranslator(TRANSLATIONS["fr"])
+    QCoreApplication.installTranslator(translator)
+
+from GlobeBuilder.ui.globe_builder_dockwidget import GlobeBuilderDockWidget  # noqa: E402
+
+
+class FakeIface:
+    """Minimal QgisInterface: just what the plugin uses."""
+
+    def __init__(self, window, canvas, bar):
+        self._window, self._canvas, self._bar = window, canvas, bar
+
+    def mapCanvas(self):
+        return self._canvas
+
+    def messageBar(self):
+        return self._bar
+
+    def mainWindow(self):
+        return self._window
+
+
+window = QMainWindow()
+window.setWindowTitle("Globe Builder - dev harness")
+window.resize(1400, 850)
+canvas = QgsMapCanvas()
+canvas.setCanvasColor(Qt.GlobalColor.white)
+window.setCentralWidget(canvas)
+bar = QgsMessageBar(canvas)
+project = QgsProject.instance()
+bridge = QgsLayerTreeMapCanvasBridge(project.layerTreeRoot(), canvas)  # keeps the canvas in sync with the project
+
+iface = FakeIface(window, canvas, bar)
+dock = GlobeBuilderDockWidget(iface)
+window.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock)
+window.resizeDocks([dock], [480], Qt.Orientation.Horizontal)
+window.show()
+
+if args.auto:
+    def _auto():
+        dock.pushButtonRun.click()
+        QTimer.singleShot(2500, _grab)
+
+    def _grab():
+        app.processEvents()
+        window.grab().save(args.auto)
+        print("screenshot:", args.auto)
+        app.quit()
+
+    QTimer.singleShot(500, _auto)
+
+code = app.exec()
+app.exitQgis()
+sys.exit(code)
