@@ -50,6 +50,29 @@ FR = {
     "Apply changes": "Appliquer les modifications",
     "Add the Globe to a Map": "Ajouter le globe à la carte",
     "Add the Globe to a Layout": "Ajouter le globe à une mise en page",
+    # --- Attributions ---
+    'This plugin uses the <a href="https://wiki.openstreetmap.org/wiki/Nominatim">OpenStreetMap Nominatim</a> '
+    'geocoding API. Please <b>use a maximum of 1 geocoding request per second</b>. '
+    'OpenStreetMap data &copy; OpenStreetMap contributors, licensed under the '
+    '<a href="https://opendatacommons.org/licenses/odbl/">ODbL</a>.':
+        'Ce plugin utilise l’API de géocodage <a href="https://wiki.openstreetmap.org/wiki/Nominatim">'
+        'OpenStreetMap Nominatim</a>. Merci de <b>ne pas dépasser 1 requête de géocodage par seconde</b>. '
+        'Données OpenStreetMap &copy; les contributeurs d’OpenStreetMap, sous licence '
+        '<a href="https://opendatacommons.org/licenses/odbl/">ODbL</a>.',
+    'Made with Natural Earth. Free vector and raster map data from '
+    '<a href="https://www.naturalearthdata.com">naturalearthdata.com</a>.':
+        'Réalisé avec Natural Earth. Données cartographiques vectorielles et raster libres de '
+        '<a href="https://www.naturalearthdata.com">naturalearthdata.com</a>.',
+    'Sentinel-2 cloudless data from <a href="https://s2maps.eu/">s2maps.eu</a> by EOX IT Services GmbH '
+    '(contains modified Copernicus Sentinel data 2017 &amp; 2018), licensed under '
+    '<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>. '
+    '<b>Non-commercial use only</b>; for commercial use see '
+    '<a href="https://cloudless.eox.at">cloudless.eox.at</a>.':
+        'Données Sentinel-2 cloudless de <a href="https://s2maps.eu/">s2maps.eu</a>, par EOX IT Services GmbH '
+        '(contient des données Copernicus Sentinel modifiées 2017 et 2018), sous licence '
+        '<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>. '
+        '<b>Usage non commercial uniquement</b> ; pour un usage commercial, voir '
+        '<a href="https://cloudless.eox.at">cloudless.eox.at</a>.',
     # --- Projections ---
     "Azimuthal Orthographic": "Azimutale orthographique",
     "Hammer & Eckert-Greifendorff": "Hammer et Eckert-Greifendorff",
