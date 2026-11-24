@@ -5,9 +5,8 @@ Qt's ``lrelease`` is not always available to contributors, so translations are p
 Python dictionaries served through a ``QTranslator`` subclass. This works for strings coming from the
 ``.ui`` file as well as for ``tr()`` calls, and needs no compilation step.
 
-Strings used as layer/group names (``Globe``, ``Halo``, ``Graticules``,
-``S2 Cloudless 2018``) are intentionally *not* translated: they are used as identifiers to find the
-plugin's own layers in the project.
+The names of the layers and of the group built by the plugin are translated too (and renamed when the
+language is switched, see ``definitions/language.py``).
 """
 
 from qgis.PyQt.QtCore import QTranslator
@@ -20,6 +19,8 @@ FR = {
     "Credits": "Crédits",
     # --- UI: sources de données ---
     "Countries": "Pays",
+    "Oceans": "Océans",
+    "S2 Cloudless 2018": "S2 sans nuages 2018",
     "Graticules": "Graticules",
     "Sentinel-2 cloudless": "Sentinel-2 sans nuages",
     # --- UI: centrage ---
@@ -98,12 +99,13 @@ TRANSLATIONS = {"fr": FR}
 
 # Identifiers that go through tr() with the default context (layer names) must stay as is,
 # even though the same words are translated when they come from the .ui file.
-IDENTIFIER_CONTEXT = "@default"
-IDENTIFIERS = {"Graticules", "Halo", "Oceans", "Globe", "S2 Cloudless 2018"}
+# Only the plugin's own strings are translated: those of ``tr()`` ("@default") and of the panel's .ui file.
+# Other contexts (QGIS itself, other plugins) must be left alone, as a translator is application wide.
+CONTEXTS = ("@default", "GlobeBuilderDockWidgetBase")
 
 
 class DictTranslator(QTranslator):
-    """QTranslator backed by a plain dict, ignoring the context."""
+    """QTranslator backed by a plain dict, for the plugin's contexts only."""
 
     def __init__(self, translations, parent=None):
         super().__init__(parent)
@@ -112,7 +114,7 @@ class DictTranslator(QTranslator):
     def translate(self, context, source_text, disambiguation=None, n=-1):
         # None gives Qt a null string = "no translation", so it falls back to the source text.
         # (An empty string would be taken as a valid, empty translation.)
-        if context == IDENTIFIER_CONTEXT and source_text in IDENTIFIERS:
+        if context not in CONTEXTS:
             return None
         return self._translations.get(source_text)
 

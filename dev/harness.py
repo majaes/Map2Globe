@@ -39,10 +39,8 @@ from qgis.analysis import QgsNativeAlgorithms  # noqa: E402
 Processing.initialize()
 QgsApplication.processingRegistry().addProvider(QgsNativeAlgorithms())
 
-if args.fr:
-    from GlobeBuilder.definitions.translations import TRANSLATIONS, DictTranslator
-    translator = DictTranslator(TRANSLATIONS["fr"])
-    QCoreApplication.installTranslator(translator)
+from GlobeBuilder.definitions.language import set_language
+set_language("fr" if args.fr else "en", remember=False)
 
 from GlobeBuilder.ui.globe_builder_dockwidget import GlobeBuilderDockWidget  # noqa: E402
 

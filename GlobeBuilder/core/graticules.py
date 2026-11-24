@@ -21,6 +21,7 @@ from qgis.core import (QgsProcessingFeedback, QgsVectorLayer, QgsFillSymbol,
                        QgsSymbolLayer, QgsFeatureRenderer)
 
 from .utils.utils import persist_layer
+from ..definitions.language import TrAttr
 from ..definitions.settings import WGS84
 from ..qgis_plugin_tools.tools.i18n import tr
 
@@ -32,7 +33,7 @@ densify grid!
 
 
 class Graticules:
-    LAYER_NAME = tr('Graticules')
+    LAYER_NAME = TrAttr('Graticules')
 
     def __init__(self, spacing=30, num_vertices=100) -> None:
         self.spacing = spacing

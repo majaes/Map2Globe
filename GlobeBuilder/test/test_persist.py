@@ -71,7 +71,7 @@ def test_countries_layer_is_called_pays_in_french():
     QCoreApplication.installTranslator(translator)
     try:
         assert tr(u'Countries') == "Pays"
-        assert tr(u'Halo') == "Halo" and tr(u'Oceans') == "Oceans"  # layer names stay as they are
+        assert tr(u'Halo') == "Halo" and tr(u'Oceans') == "Océans"  # the layer names are translated too
         names = Globe.managed_layer_names()
         assert "Pays" in names and "Countries" in names  # old projects keep working
     finally:

@@ -19,12 +19,12 @@
 #  You should have received a copy of the GNU General Public License
 #  along with GlobeBuilder.  If not, see <https://www.gnu.org/licenses/>.
 
-from qgis.PyQt.QtCore import QTranslator, QCoreApplication, Qt
+from qgis.PyQt.QtCore import QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
 
-from .definitions.translations import TRANSLATIONS, DictTranslator
 from .qgis_plugin_tools.tools.custom_logging import setup_logger, teardown_logger
+from .definitions.language import set_language, stored_language, uninstall_language
 from .qgis_plugin_tools.tools.i18n import setup_translation, tr
 from .qgis_plugin_tools.tools.resources import plugin_name, resources_path
 from .ui.globe_builder_dockwidget import GlobeBuilderDockWidget
@@ -46,18 +46,9 @@ class GlobeBuilder:
 
         setup_logger(plugin_name())
 
-        # initialize locale
-        locale, file_path = setup_translation()
-        # Keep a reference: a translator that gets garbage collected silently stops working.
-        self.translator = None
-        if file_path:
-            self.translator = QTranslator()
-            self.translator.load(file_path)
-        elif locale[:2] in TRANSLATIONS:
-            self.translator = DictTranslator(TRANSLATIONS[locale[:2]])
-        if self.translator is not None:
-            # noinspection PyCallByClass,PyArgumentList
-            QCoreApplication.installTranslator(self.translator)
+        # initialize the language: the one chosen with the FR/EN toggle, else the one of QGIS
+        locale, _file_path = setup_translation()
+        set_language(stored_language(locale), remember=False)
 
         # Declare instance attributes
         self.actions = []
@@ -173,6 +164,15 @@ class GlobeBuilder:
         # will be set False in run()
         self.first_start = True
 
+    def retranslate_gui(self):
+        """The language was switched in the panel: update the toolbar button and the menu entry."""
+        for action in self.actions:
+            action.setText(tr(u'Build Globe view'))
+            self.iface.removePluginMenu(self.menu, action)
+        self.menu = tr(u'&Globe Builder')
+        for action in self.actions:
+            self.iface.addPluginToMenu(self.menu, action)
+
     def onClosePlugin(self):
         """Cleanup necessary items here when plugin dockwidget is closed"""
 
@@ -194,6 +194,7 @@ class GlobeBuilder:
                 tr(u'&Globe Builder'),
                 action)
         del self.toolbar
+        uninstall_language()
         teardown_logger(plugin_name())
 
     def run(self):
@@ -207,6 +208,7 @@ class GlobeBuilder:
             if self.dockwidget == None:
                 # Create the dockwidget (after translation) and keep reference
                 self.dockwidget = GlobeBuilderDockWidget(self.iface)
+                self.dockwidget.languageChanged.connect(self.retranslate_gui)
 
             # connect to provide cleanup on closing of dockwidget
             self.dockwidget.closingPlugin.connect(self.onClosePlugin)

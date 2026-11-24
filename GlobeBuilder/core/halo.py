@@ -24,6 +24,7 @@ from qgis.core import (QgsFillSymbol, QgsEffectStack, QgsDropShadowEffect, QgsIn
 from qgis.gui import QgisInterface
 
 from .utils.utils import crs_from_proj, persist_layer
+from ..definitions.language import TrAttr
 from ..definitions.projections import Projections
 from ..definitions.settings import (TRANSPARENT_COLOR, HaloDrawMethod, EARTH_RADIUS, DEFAULT_HALO_DRAW_METHOD,
                                     DEFAULT_NUMBER_OF_SEGMENTS, WGS84)
@@ -35,9 +36,9 @@ LOGGER = logging.getLogger(plugin_name())
 
 
 class Halo:
-    LAYER_NAME = tr('Halo')
+    LAYER_NAME = TrAttr('Halo')
     # A halo layer that has a fill colour is the globe's water: it gets this name instead
-    OCEANS_LAYER_NAME = tr('Oceans')
+    OCEANS_LAYER_NAME = TrAttr('Oceans')
 
     def __init__(self, iface: QgisInterface, origin, projection) -> None:
         self.iface = iface

@@ -24,13 +24,14 @@ import os
 
 from qgis.PyQt.QtCore import Qt, pyqtSignal, pyqtSlot
 from qgis.PyQt import QtWidgets
-from qgis.PyQt.QtWidgets import QComboBox, QCompleter
+from qgis.PyQt.QtWidgets import QButtonGroup, QComboBox, QCompleter, QHBoxLayout, QPushButton
 from qgis.core import Qgis, QgsProject
 
 from ..core.globe import Globe
 from ..core.utils.geocoder import Geocoder
 from ..core.utils.utils import (transform_to_wgs84, get_map_center_coordinates,
                                 load_name_centers, local_data_copy)
+from ..definitions.language import current_language, set_language
 from ..definitions.projections import Projections
 from ..definitions.settings import (LOCAL_DATA_DIR, DEFAULT_MAX_NUMBER_OF_RESULTS, DEFAULT_USE_NE_COUNTRIES,
                                     DEFAULT_USE_NE_GRATICULES, DEFAULT_USE_S2_CLOUDLESS, DEFAULT_ORIGIN,
@@ -49,6 +50,7 @@ LOGGER = logging.getLogger(plugin_name())
 
 class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     closingPlugin = pyqtSignal()
+    languageChanged = pyqtSignal()
 
     def __init__(self, iface, parent=None):
         """Constructor."""
@@ -64,6 +66,7 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.setupUi(self)
 
         self.make_panel_compact()
+        self.setup_language_buttons()
 
         self.iface = iface
         # noinspection PyArgumentList
@@ -113,6 +116,43 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.update_buttons_state()
         self.is_initializing = False
 
+    def setup_language_buttons(self):
+        """FR / EN toggle at the top of the panel."""
+        row = QHBoxLayout()
+        row.setContentsMargins(0, 0, 0, 0)
+        row.addStretch(1)
+        self.language_group = QButtonGroup(self)
+        self.language_group.setExclusive(True)
+        self.language_buttons = {}
+        for code, label, tooltip in (("fr", "FR", "Français"), ("en", "EN", "English")):
+            button = QPushButton(label)
+            button.setCheckable(True)
+            button.setFixedWidth(42)
+            button.setToolTip(tooltip)
+            button.clicked.connect(lambda _checked=False, language=code: self.on_language_selected(language))
+            self.language_group.addButton(button)
+            row.addWidget(button)
+            self.language_buttons[code] = button
+        self.verticalLayout_7.insertLayout(0, row)
+        self.language_buttons[current_language()].setChecked(True)
+
+    def on_language_selected(self, code):
+        if code == current_language():
+            return
+        set_language(code)
+        self.retranslate()
+
+    def retranslate(self):
+        """Apply the current language to everything: the panel, the credits and the layers already built."""
+        self.retranslateUi(self)
+        self.update_name_placeholder()
+        self.populate_comboBoxProjections()
+        self.update_attributions()
+        self.update_buttons_state()
+        self.globe.retranslate_layers()
+        self.language_buttons[current_language()].setChecked(True)
+        self.languageChanged.emit()
+
     def make_panel_compact(self):
         """Let long texts shrink/wrap so the panel needs no horizontal scrollbar."""
         for label in (self.label_2, self.label_3, self.label_4):
@@ -144,11 +184,8 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         u'<a href="https://cloudless.eox.at">cloudless.eox.at</a>.')
 
     def update_attributions(self):
-        """The credits: data sources, the Sentinel-2 licence notice only when that layer is enabled, the author."""
-        parts = [tr(self.ATTRIBUTION_DATA)]
-        if self.checkBoxS2cloudless.isChecked():
-            parts.append(tr(self.ATTRIBUTION_S2))
-        parts.append(self.AUTHOR_CREDIT)
+        """The credits: data sources, the Sentinel-2 licence reminder (CC BY-NC-SA) and the author."""
+        parts = [tr(self.ATTRIBUTION_DATA), tr(self.ATTRIBUTION_S2), self.AUTHOR_CREDIT]
         self.label_5.setText("<p>" + "</p><p>".join(parts) + "</p>")
 
     def setup_name_search(self):
@@ -160,12 +197,15 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.comboBoxNames.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
         self.comboBoxNames.addItems(names)
         self.comboBoxNames.setCurrentIndex(-1)
-        self.comboBoxNames.lineEdit().setPlaceholderText(tr(u"Type to search a country name"))
+        self.update_name_placeholder()
         completer = QCompleter(names, self.comboBoxNames)
         completer.setFilterMode(Qt.MatchFlag.MatchContains)
         completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         completer.setCompletionMode(QCompleter.CompletionMode.PopupCompletion)
         self.comboBoxNames.setCompleter(completer)
+
+    def update_name_placeholder(self):
+        self.comboBoxNames.lineEdit().setPlaceholderText(tr(u"Type to search a country name"))
 
     @pyqtSlot(bool)
     def on_radioButtonName_toggled(self, is_checked):
@@ -220,7 +260,6 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
     def on_checkBoxS2cloudless_stateChanged(self):
         set_setting("useS2cloudless", self.checkBoxS2cloudless.isChecked())
-        self.update_attributions()
 
     @pyqtSlot()
     def on_pushButtonSearch_clicked(self):
@@ -297,10 +336,14 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             proj_v = proj_version()
         except AttributeError:
             proj_v = (0, 0)
+        selected = self.comboBoxProjections.currentIndex()
+        self.comboBoxProjections.blockSignals(True)
         self.comboBoxProjections.clear()
         for projection in Projections:
             if proj_v >= projection.value.min_proj:
                 self.comboBoxProjections.addItem(projection.value.name)
+        self.comboBoxProjections.setCurrentIndex(max(selected, 0))
+        self.comboBoxProjections.blockSignals(False)
 
     def add_halo_to_globe(self):
         if self.radioButtonHNone.isChecked():

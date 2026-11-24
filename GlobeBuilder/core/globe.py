@@ -29,6 +29,7 @@ from qgis.core import (QgsApplication, QgsProject, QgsCoordinateReferenceSystem,
 from .graticules import Graticules
 from .halo import Halo
 from .utils.utils import crs_from_proj, local_data_copy
+from ..definitions.language import TrAttr, all_names
 from ..definitions.projections import Projections
 from ..definitions.settings import (LayerConnectionType, S2CLOUDLESS_WMTS_URL, LOCAL_DATA_DIR,
                                     DEFAULT_LAYER_CONNECTION_TYPE, NATURAL_EARTH_BASE_URL,
@@ -43,7 +44,9 @@ LOGGER = logging.getLogger(plugin_name())
 
 
 class Globe:
-    GROUP_NAME = tr('Globe')
+    GROUP_NAME = TrAttr('Globe')
+    # msgids of the layers built by the plugin (their names are translated)
+    LAYER_MSGIDS = (u'Halo', u'Oceans', u'Graticules', u'Countries', u'S2 Cloudless 2018')
 
     def __init__(self, iface, origin=DEFAULT_ORIGIN, projection=Projections.AZIMUTHAL_ORTHOGRAPHIC):
         self.iface = iface
@@ -55,7 +58,8 @@ class Globe:
     @property
     def group(self):
         root = self.qgis_instance.layerTreeRoot()
-        groups = tuple(filter(lambda g: g.name() == Globe.GROUP_NAME,
+        group_names = all_names(u'Globe')
+        groups = tuple(filter(lambda g: g.name() in group_names,
                               filter(root.isGroup, root.children())))
         if len(groups) == 1:
             return groups[0]
@@ -66,9 +70,17 @@ class Globe:
     # Layers manually added to the group by the user (e.g. their own basemap) are left untouched.
     @staticmethod
     def managed_layer_names():
-        """Names of the layers built by the plugin: in the current language and in English (older projects)."""
-        english = {u'Halo', u'Oceans', u'Graticules', u'Countries', u'S2 Cloudless 2018'}
-        return english | {tr(name) for name in english}
+        """Names of the layers built by the plugin, in every language (a project can come from another one)."""
+        names = set()
+        for msgid in Globe.LAYER_MSGIDS:
+            names |= all_names(msgid)
+        return names
+
+    @staticmethod
+    def layers_named(msgid):
+        """The project's layers called `msgid`, in whatever language they were named."""
+        names = all_names(msgid)
+        return [layer for layer in QgsProject.instance().mapLayers().values() if layer.name() in names]
 
     # How long QGIS' "set CRS from the first layer" step is kept off after building the globe (ms).
     # That step runs deferred, i.e. after the code building the globe has returned.
@@ -105,7 +117,7 @@ class Globe:
         """The Globe group, or None. Unlike the `group` property it never creates the group."""
         root = QgsProject.instance().layerTreeRoot()
         for child in root.children():
-            if root.isGroup(child) and child.name() == Globe.GROUP_NAME:
+            if root.isGroup(child) and child.name() in all_names(u'Globe'):
                 return child
         return None
 
@@ -135,9 +147,8 @@ class Globe:
 
     def load_data(self, load_s2, load_countries, load_graticules, countries_color, graticules_color,
                   counties_res, graticules_res):
-        existing_layer_names = self.get_existing_layer_names()
         s2_cloudless_layer_name = tr(u'S2 Cloudless 2018')
-        if load_s2 and s2_cloudless_layer_name not in existing_layer_names:
+        if load_s2 and not Globe.layers_named(u'S2 Cloudless 2018'):
             s2_layer = QgsRasterLayer(S2CLOUDLESS_WMTS_URL, s2_cloudless_layer_name, "wms")
             if s2_layer.isValid():
                 self.insert_layer_to_group(s2_layer)
@@ -149,7 +160,7 @@ class Globe:
             def style_countries(layer):
                 layer.renderer().symbol().setColor(countries_color)
 
-            ne_data[tr(u'Countries')] = (
+            ne_data[u'Countries'] = (
                 'ne_{}_admin_0_countries.geojson'.format(counties_res), lambda l: style_countries(l))
 
         if len(ne_data):
@@ -158,8 +169,7 @@ class Globe:
         gra = Graticules(graticules_res)
         if load_graticules:
             # Recreate rather than reuse so a changed color/resolution is always applied
-            [self.qgis_instance.removeMapLayer(lyr.id()) for lyr in
-             self.qgis_instance.mapLayersByName(gra.LAYER_NAME)]
+            [self.qgis_instance.removeMapLayer(lyr.id()) for lyr in Globe.layers_named(u'Graticules')]
             graticule_layer = gra.create_graticules(graticules_color)
             if graticule_layer.isValid():
                 self.insert_layer_to_group(graticule_layer)
@@ -177,15 +187,15 @@ class Globe:
         else:
             root = NATURAL_EARTH_BASE_URL
 
-        for name, data in ne_data.items():
+        for msgid, data in ne_data.items():
+            name = tr(msgid)
             source, styling_method = data
             source_path = os.path.join(root, source)
             if connection_type == LayerConnectionType.local:
                 # Don't let layers lock files inside the plugin folder (breaks upgrades on Windows)
                 source_path = local_data_copy(source_path)
-            # A layer made by an older version / in another language may still carry the English name
-            english_name = {tr(u'Countries'): u'Countries'}.get(name, name)
-            existing = self.qgis_instance.mapLayersByName(name) or self.qgis_instance.mapLayersByName(english_name)
+            # The layer may carry another language's name (older version, project from another language)
+            existing = Globe.layers_named(msgid)
             layer = existing[0] if existing else None
             if layer is not None and layer.name() != name:
                 layer.setName(name)
@@ -259,7 +269,7 @@ class Globe:
         """
         group = Globe.find_group()
         if group is not None:
-            globe_shaped = {Halo.LAYER_NAME, Halo.OCEANS_LAYER_NAME}
+            globe_shaped = all_names(u'Halo') | all_names(u'Oceans')
             for node in group.findLayers():
                 if node.layer() is not None and node.layer().name() in globe_shaped:
                     node.setItemVisibilityChecked(False)
@@ -274,6 +284,22 @@ class Globe:
         canvas.refresh()
         for key in ("flat_crs", "flat_extent"):
             self.qgis_instance.removeEntry(Globe.FLAT_STATE_SCOPE, key)
+
+    def retranslate_layers(self):
+        """Rename the group and the layers built by the plugin to the current language."""
+        group = Globe.find_group()
+        if group is None:
+            return
+        group.setName(Globe.GROUP_NAME)
+        for node in group.findLayers():
+            layer = node.layer()
+            if layer is None:
+                continue
+            for msgid in Globe.LAYER_MSGIDS:
+                if layer.name() in all_names(msgid):
+                    if layer.name() != tr(msgid):
+                        layer.setName(tr(msgid))
+                    break
 
     def refresh_legend(self, layer):
         """Update the layer's symbol in the Layers panel.
@@ -371,8 +397,8 @@ class Globe:
 
     # noinspection PyArgumentList
     def remove_halo(self):
-        for name in (Halo.LAYER_NAME, Halo.OCEANS_LAYER_NAME):
-            [self.qgis_instance.removeMapLayer(lyr.id()) for lyr in self.qgis_instance.mapLayersByName(name)]
+        for msgid in (u'Halo', u'Oceans'):
+            [self.qgis_instance.removeMapLayer(lyr.id()) for lyr in Globe.layers_named(msgid)]
 
     def add_halo(self, use_effects, stroke_color, fill_color=None, halo_with_fill=False):
         halo = Halo(self.iface, self.origin, self.projection)
