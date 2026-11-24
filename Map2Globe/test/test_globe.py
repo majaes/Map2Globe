@@ -173,7 +173,8 @@ def test_flat_map_keeps_the_plugin_layers_and_hides_the_globe_shaped_ones(globe)
     nodes = {node.layer().name(): node for node in globe.group.findLayers()}
     assert set(nodes) == {"Countries", "Halo", "Oceans"}  # nothing deleted
     assert nodes["Countries"].itemVisibilityChecked()
-    assert not nodes["Halo"].itemVisibilityChecked()
+    # the halo and the oceans are those of a flat map: visible, in WGS84, covering the whole world
+    assert nodes["Halo"].itemVisibilityChecked() and nodes["Halo"].layer().crs().authid() == "EPSG:4326"
     # the oceans are now those of a flat map: visible, in WGS84, covering the whole world
     assert nodes["Oceans"].itemVisibilityChecked() and nodes["Oceans"].layer().crs().authid() == "EPSG:4326"
     assert nodes["Oceans"].layer().extent().width() == 360
@@ -186,10 +187,10 @@ def test_oceans_disc_becomes_world_oceans_when_the_map_is_flat_by_any_means(glob
     QgsProject.instance().setCrs(QgsCoordinateReferenceSystem("EPSG:4326"))
     globe.adapt_to_flat_map()
     nodes = {node.layer().name(): node for node in globe.group.findLayers()}
-    assert not nodes["Halo"].itemVisibilityChecked()
+    assert nodes["Halo"].layer().extent().width() == 360 and nodes["Halo"].itemVisibilityChecked()
     assert nodes["Oceans"].layer().extent().width() == 360 and nodes["Oceans"].itemVisibilityChecked()
     globe.adapt_to_flat_map()  # idempotent: no second Oceans layer
-    assert len(Globe.layers_named("Oceans")) == 1
+    assert len(Globe.layers_named("Oceans")) == 1 and len(Globe.layers_named("Halo")) == 1
 
 
 def test_flat_map_keeps_layers_added_by_the_user(globe):

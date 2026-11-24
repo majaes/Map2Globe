@@ -34,7 +34,7 @@ from ..definitions.language import TrAttr, all_names
 from ..definitions.projections import Projections
 from ..definitions.settings import (LayerConnectionType, S2CLOUDLESS_WMTS_URL, LOCAL_DATA_DIR,
                                     DEFAULT_LAYER_CONNECTION_TYPE, NATURAL_EARTH_BASE_URL,
-                                    DEFAULT_ORIGIN, DEFAULT_HALO_FILL_COLOR,
+                                    DEFAULT_ORIGIN, DEFAULT_HALO_FILL_COLOR, DEFAULT_HALO_COLOR, HaloDrawMethod,
                                     WGS84)
 from ..qgis_plugin_tools.tools.custom_logging import bar_msg
 from ..qgis_plugin_tools.tools.i18n import tr
@@ -262,71 +262,77 @@ class Globe:
         return None if rect.isEmpty() else rect
 
     @staticmethod
-    def hide_halo_layers():
-        """Hide the Halo layers: a disc built for the globe's projection is deformed on a flat map."""
-        group = Globe.find_group()
-        if group is None:
-            return
-        halo_names = all_names(u'Halo')
-        for node in group.findLayers():
-            if node.layer() is not None and node.layer().name() in halo_names and node.itemVisibilityChecked():
-                node.setItemVisibilityChecked(False)
-
-    @staticmethod
-    def _is_flat_oceans(layer):
+    def _is_flat_layer(layer):
+        """The flat versions of the Halo and Oceans layers are in WGS84, the globe's ones in the globe's CRS."""
         return layer.crs().authid() == "EPSG:4326"
 
-    def flatten_oceans(self):
-        """Replace the globe's Oceans disc by the oceans of a flat map: a rectangle covering the whole world.
+    def _world_rectangle(self):
+        """The whole world as a polygon in WGS84, with a vertex every 2 degrees so that it follows the curves of
+        the projection the flat map may use. Mercator-like projections can't show the poles."""
+        max_lat = 90 if self.qgis_instance.crs().isGeographic() else 85
+        coords = ([(x, -max_lat) for x in range(-180, 181, 2)] + [(180, y) for y in range(-max_lat, max_lat + 1, 2)]
+                  + [(x, max_lat) for x in range(180, -181, -2)] + [(-180, y) for y in range(max_lat, -max_lat - 1, -2)])
+        return QgsGeometry.fromPolygonXY([[QgsPointXY(x, y) for x, y in coords]])
 
-        The disc is only right in the globe's projection; elsewhere it is a deformed shape (a triangle,
-        a part of the world...). The new layer keeps the colour of the disc and is drawn under the others.
+    def _flat_layer_from(self, disc, file_stem, msgid):
+        """A WGS84 layer called `msgid`, holding the whole world, to take the place of the globe's `disc` layer."""
+        layer = QgsVectorLayer("Polygon?crs=EPSG:4326", tr(msgid), "memory")
+        feature = QgsFeature()
+        feature.setGeometry(self._world_rectangle())
+        layer.dataProvider().addFeatures([feature])
+        layer = persist_layer(layer, file_stem, tr(msgid))
+        return layer
+
+    def flatten_globe_layers(self):
+        """Replace the Oceans and Halo discs by their flat map version, covering the whole world.
+
+        The discs are only right in the globe's projection; elsewhere they are deformed shapes (a triangle,
+        a part of the world, a white veil...). The flat layers keep the colours of the discs: the oceans are
+        a filled rectangle drawn under the other layers, the halo is the outline (with its glow) of the map.
         """
         group = Globe.find_group()
         if group is None:
             return
-        names = all_names(u'Oceans')
-        discs = [node.layer() for node in group.findLayers()
-                 if node.layer() is not None and node.layer().name() in names
-                 and not Globe._is_flat_oceans(node.layer())]
-        if not discs:
-            return
-        color = DEFAULT_HALO_FILL_COLOR
-        try:
-            color = discs[0].renderer().symbol().color()
-        except Exception:  # unusual renderer: keep the default colour
-            LOGGER.debug("Could not read the oceans colour", exc_info=True)
-
-        # Mercator-like projections can't show the poles
-        max_lat = 90 if self.qgis_instance.crs().isGeographic() else 85
-        coords = ([(x, -max_lat) for x in range(-180, 181, 2)] + [(180, y) for y in range(-max_lat, max_lat + 1, 2)]
-                  + [(x, max_lat) for x in range(180, -181, -2)] + [(-180, y) for y in range(max_lat, -max_lat - 1, -2)])
-        layer = QgsVectorLayer("Polygon?crs=EPSG:4326", tr(u'Oceans'), "memory")
-        feature = QgsFeature()
-        feature.setGeometry(QgsGeometry.fromPolygonXY([[QgsPointXY(x, y) for x, y in coords]]))
-        layer.dataProvider().addFeatures([feature])
-        layer = persist_layer(layer, 'oceans_flat', tr(u'Oceans'))
-        symbol = QgsFillSymbol.createSimple({'color': color.name(), 'outline_style': 'no'})
-        symbol.setColor(color)
-        layer.renderer().setSymbol(symbol)
-
-        for disc in discs:
-            self.qgis_instance.removeMapLayer(disc.id())
-        self.qgis_instance.addMapLayer(layer, False)
-        group.insertLayer(len(group.children()), layer)
+        for msgid, stem in ((u'Oceans', 'oceans_flat'), (u'Halo', 'halo_flat')):
+            names = all_names(msgid)
+            for node in list(group.findLayers()):
+                disc = node.layer()
+                if disc is None or disc.name() not in names or Globe._is_flat_layer(disc):
+                    continue
+                index = group.children().index(node)
+                try:
+                    symbol = disc.renderer().symbol()
+                    color = symbol.color()
+                    symbol_layer = symbol.symbolLayer(0)
+                    stroke = symbol_layer.strokeColor() if hasattr(symbol_layer, "strokeColor") else color
+                    effect = symbol_layer.paintEffect() if hasattr(symbol_layer, "paintEffect") else None
+                    use_effects = effect is not None and effect.enabled()
+                except Exception:  # unusual renderer: sensible defaults
+                    LOGGER.debug("Could not read the style of the %s layer", msgid, exc_info=True)
+                    color, stroke, use_effects = DEFAULT_HALO_FILL_COLOR, DEFAULT_HALO_COLOR, False
+                layer = self._flat_layer_from(disc, stem, msgid)
+                if msgid == u'Oceans':
+                    flat_symbol = QgsFillSymbol.createSimple({'color': color.name(), 'outline_style': 'no'})
+                    flat_symbol.setColor(color)
+                    layer.renderer().setSymbol(flat_symbol)
+                    index = len(group.children())  # under everything else
+                else:
+                    Halo.set_halo_styles(layer, HaloDrawMethod.buffered_point, stroke, use_effects, None)
+                self.qgis_instance.removeMapLayer(disc.id())
+                self.qgis_instance.addMapLayer(layer, False)
+                group.insertLayer(min(index, len(group.children())), layer)
 
     def adapt_to_flat_map(self):
-        """Make the plugin's layers fit a flat map: no Halo, oceans covering the world."""
-        Globe.hide_halo_layers()
-        self.flatten_oceans()
+        """Make the plugin's layers fit a flat map: halo and oceans covering the whole world."""
+        self.flatten_globe_layers()
 
     def show_flat_map(self):
         """Switch from the globe back to the flat map, keeping the plugin's layers.
 
-        The project gets its flat projection and view back. The Halo disc is built for the globe's projection and
-        looks wrong on a flat map, so it is hidden (not deleted), and the Oceans disc is replaced by oceans
-        covering the whole world; the other layers (countries, graticules...) stay visible. Building the
-        globe again rebuilds the halo and the oceans.
+        The project gets its flat projection and view back. The Halo and Oceans discs are built for the globe's
+        projection and look wrong on a flat map, so they are replaced by a halo and oceans covering the whole
+        world; the other layers (countries, graticules...) stay as they are. Building the globe again
+        rebuilds the halo and the oceans.
         """
         self.qgis_instance.setCrs(self._remembered_crs())
         self.adapt_to_flat_map()

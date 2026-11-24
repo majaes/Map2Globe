@@ -19,7 +19,7 @@ sys.path.insert(0, ROOT)
 parser = argparse.ArgumentParser()
 parser.add_argument("--fr", action="store_true")
 parser.add_argument("--auto", metavar="FILE")
-parser.add_argument("--flat", action="store_true", help="with --auto: use oceans, build the globe, then switch back to flat")
+parser.add_argument("--flat", nargs="?", const="outline", choices=["outline", "halo"], help="with --auto: use oceans, build the globe, then switch back to flat")
 args = parser.parse_args()
 
 from qgis.core import QgsApplication, QgsCoordinateReferenceSystem, QgsLayerTreeModel, QgsProject
@@ -99,7 +99,7 @@ print("dock minimumSizeHint:", dock.minimumSizeHint().width(), "x", dock.minimum
 if args.auto:
     def _auto():
         if args.flat:
-            dock.radioButtonHFill.setChecked(True)
+            (dock.radioButtonHFillWithHalo if args.flat == "halo" else dock.radioButtonHFill).setChecked(True)
         dock.pushButtonRun.click()
         if args.flat:
             QTimer.singleShot(1500, dock.pushButtonFlatMap.click)
