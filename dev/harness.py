@@ -79,7 +79,7 @@ project.crsChanged.connect(lambda: canvas.setDestinationCrs(project.crs()))
 iface = FakeIface(window, canvas, bar)
 dock = GlobeBuilderDockWidget(iface)
 window.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock)
-window.resizeDocks([dock], [480], Qt.Orientation.Horizontal)
+window.resizeDocks([dock], [540], Qt.Orientation.Horizontal)
 window.show()
 print("dock minimumSizeHint:", dock.minimumSizeHint().width(), "x", dock.minimumSizeHint().height())
 

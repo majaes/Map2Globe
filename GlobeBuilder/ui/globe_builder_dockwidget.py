@@ -21,8 +21,9 @@
 
 import logging
 
-from qgis.PyQt.QtCore import pyqtSignal, pyqtSlot
+from qgis.PyQt.QtCore import Qt, pyqtSignal, pyqtSlot
 from qgis.PyQt import QtWidgets
+from qgis.PyQt.QtWidgets import QComboBox, QLabel
 from qgis.core import QgsProject
 
 from ..core.globe import Globe
@@ -59,6 +60,8 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         # http://doc.qt.io/qt-5/designer-using-a-ui-file.html
         # #widgets-and-dialogs-with-auto-connect
         self.setupUi(self)
+
+        self.make_panel_compact()
 
         self.iface = iface
         # noinspection PyArgumentList
@@ -103,6 +106,28 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.comboBoxProjections.currentTextChanged.connect(self.projection_changed)
 
         self.is_initializing = False
+
+    def make_panel_compact(self):
+        """Let long texts shrink/wrap so the panel needs no horizontal scrollbar."""
+        for label in (self.label_2, self.label_3, self.label_4):
+            label.setWordWrap(True)
+        for combo in (self.comboBoxLayouts, self.comboBoxProjections, self.comboBoxCountries,
+                      self.comboBoxGraticules):
+            combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+            combo.setMinimumContentsLength(8)
+
+        # Sentinel-2 goes on its own row instead of widening the Countries/Graticules row.
+        self.horizontalLayout_9.removeWidget(self.checkBoxS2cloudless)
+        self.verticalLayout_6.addWidget(self.checkBoxS2cloudless)
+
+        # A QCheckBox can't wrap its text: show the (long) text in a wrapping label instead.
+        check = self.checkBoxIntCountries
+        text_label = QLabel(check.text())
+        text_label.setWordWrap(True)
+        text_label.mouseReleaseEvent = lambda _event: check.toggle() if check.isEnabled() else None
+        check.setText("")
+        self.horizontalLayout_15.insertWidget(1, text_label, 1)
+        self.scrollArea.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
 
     def closeEvent(self, event):
         # noinspection PyUnresolvedReferences

@@ -93,3 +93,4 @@
 * Minor cleanups: missing `@pyqtSlot`, a no-op assignment, and an unparsable origin no longer overrides the previous one.
 * Panel UI: the three action buttons are now stacked vertically, which lowers the panel's minimum width from ~1100 px to ~450 px (it used to squash the map canvas). The Countries/Graticules checkboxes now have visible labels, and their resolution drop-downs only show the value (`50m`, `10°`).
 * Added `dev/harness.py`: runs the panel next to a real map canvas outside QGIS (`--fr` for French, `--auto file.png` for a screenshot), so changes can be tried without reloading the plugin in QGIS.
+* Removed the panel's horizontal scrollbar at normal widths: long labels now wrap, drop-downs can shrink, the Sentinel-2 checkbox moved to its own row, the "Color for Countries intersecting the current view" text wraps, and the Visualization columns are stacked. The panel's minimum content width went from ~825 px to ~460 px (measured with a wide font).

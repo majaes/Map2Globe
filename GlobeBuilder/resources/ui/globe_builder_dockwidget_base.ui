@@ -376,7 +376,7 @@
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_13">
              <item>
-              <layout class="QHBoxLayout" name="horizontalLayout_11">
+              <layout class="QVBoxLayout" name="horizontalLayout_11">
                <item>
                 <layout class="QVBoxLayout" name="verticalLayout_14">
                  <item>
@@ -487,7 +487,7 @@
                <item>
                 <widget class="Line" name="line_2">
                  <property name="orientation">
-                  <enum>Qt::Vertical</enum>
+                  <enum>Qt::Horizontal</enum>
                  </property>
                 </widget>
                </item>
