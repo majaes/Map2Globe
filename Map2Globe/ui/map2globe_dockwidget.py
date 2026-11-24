@@ -91,6 +91,7 @@ class Map2GlobeDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.on_radioButtonHFill_toggled(self.radioButtonHFill.isChecked())
         self.on_radioButtonHFillWithHalo_toggled(self.radioButtonHFillWithHalo.isChecked())
         self.on_radioButtonHNone_toggled(self.radioButtonHNone.isChecked())
+        self.update_source_widgets()
 
         self.populate_comboBoxProjections()
         self.update_attributions()
@@ -147,6 +148,8 @@ class Map2GlobeDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         """Apply the current language to everything: the panel, the credits and the layers already built."""
         self.retranslateUi(self)
         self.update_name_placeholder()
+        self.update_placeholders()
+        self.update_tooltips()
         self.populate_comboBoxProjections()
         self.update_attributions()
         self.update_buttons_state()
@@ -155,22 +158,49 @@ class Map2GlobeDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.languageChanged.emit()
 
     def make_panel_compact(self):
-        """Let long texts shrink/wrap so the panel needs no horizontal scrollbar."""
-        for label in (self.label_2, self.label_3, self.label_4):
+        """Let long texts shrink/wrap so the panel needs no horizontal scrollbar, and polish the layout."""
+        for label in (self.label_2, self.label_4):
             label.setWordWrap(True)
+        # Hint under the coordinates field: small and discreet
+        self.label_2.setStyleSheet("color: gray; font-size: 90%;")
         for combo in (self.comboBoxProjections, self.comboBoxCountries,
                       self.comboBoxGraticules):
             combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
             combo.setMinimumContentsLength(8)
 
-        # Sentinel-2 goes on its own row instead of widening the Countries/Graticules row.
-        self.horizontalLayout_9.removeWidget(self.checkBoxS2cloudless)
-        self.verticalLayout_6.addWidget(self.checkBoxS2cloudless)
+        # Colour buttons: same, reasonable width instead of stretching over the whole panel
+        for button in (self.mColorButtonHFill, self.mColorButtonHalo,
+                       self.mColorButtonCountries, self.mColorButtonGraticules):
+            button.setMinimumWidth(110)
+            button.setMaximumWidth(160)
+        self.gridLayout_2.setColumnStretch(0, 1)
+        self.gridLayout_2.setColumnStretch(1, 1)
+
+        # Radio buttons share one column width, fields take the rest
+        self.gridLayoutCentering.setColumnStretch(1, 1)
+        self.gridLayoutSources.setColumnStretch(2, 1)
+        self.comboBoxNames.setMinimumContentsLength(10)
+        self.lineEditLonLat.setPlaceholderText("0.5, 42.5")
+
+        # The main action stands out
+        font = self.pushButtonRun.font()
+        font.setBold(True)
+        self.pushButtonRun.setFont(font)
+        self.pushButtonRun.setMinimumHeight(34)
+        self.pushButtonRun.setDefault(True)
+        self.update_tooltips()
 
         self.label_5.setWordWrap(True)
         self.label_5.setOpenExternalLinks(True)
         self.groupBox_6.setCollapsed(True)
-        self.scrollArea.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.scrollArea.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.update_placeholders()
+
+    def update_placeholders(self):
+        self.lineEditGeocoding.setPlaceholderText(tr(u"Address or place name"))
+
+    def update_tooltips(self):
+        self.pushButtonRun.setToolTip(tr(u"Build the globe from the settings above"))
 
     ATTRIBUTION_DATA = (
         u'The free vector and raster map data used come from the '
@@ -231,33 +261,53 @@ class Map2GlobeDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     def on_radioButtonGeocoding_toggled(self, is_checked):
         self.lineEditGeocoding.setEnabled(is_checked)
         self.pushButtonSearch.setEnabled(is_checked)
-        self.listWidgetGeocodingResults.setEnabled(is_checked)
-        self.spinBoxMaxResults.setEnabled(is_checked)
+        # The results list and its size setting only take room while geocoding is the chosen way to centre
+        for widget in (self.listWidgetGeocodingResults, self.label_4, self.spinBoxMaxResults):
+            widget.setVisible(is_checked)
+            widget.setEnabled(is_checked)
 
 
     @pyqtSlot(bool)
     def on_radioButtonHFillWithHalo_toggled(self, is_checked):
-        self.mColorButtonHFill.setEnabled(is_checked or self.radioButtonHFill.isChecked())
+        self.set_ocean_color_enabled(is_checked or self.radioButtonHFill.isChecked())
 
     @pyqtSlot(bool)
     def on_radioButtonHFill_toggled(self, is_checked):
-        self.mColorButtonHFill.setEnabled(is_checked or self.radioButtonHFillWithHalo.isChecked())
+        self.set_ocean_color_enabled(is_checked or self.radioButtonHFillWithHalo.isChecked())
+
+    def set_ocean_color_enabled(self, enabled):
+        self.mColorButtonHFill.setEnabled(enabled)
+        self.label_15.setEnabled(enabled)
 
     @pyqtSlot(bool)
     def on_radioButtonHNone_toggled(self, is_checked):
+        self.label_17.setEnabled(not is_checked)
         self.mColorButtonHalo.setEnabled(not is_checked)
-        self.mColorButtonHFill.setEnabled(not is_checked and (
+        self.set_ocean_color_enabled(not is_checked and (
             self.radioButtonHFill.isChecked() or self.radioButtonHFillWithHalo.isChecked()))
 
     @pyqtSlot(int)
     def on_spinBoxMaxResults_valueChanged(self, value):
         set_setting("maxNumberOfResults", value)
 
+    def update_source_widgets(self):
+        """The resolution and colour of a layer only matter while that layer is ticked."""
+        countries = self.checkBoxCountries.isChecked()
+        graticules = self.checkBoxGraticules.isChecked()
+        self.comboBoxCountries.setEnabled(countries)
+        self.mColorButtonCountries.setEnabled(countries)
+        self.label_7.setEnabled(countries)
+        self.comboBoxGraticules.setEnabled(graticules)
+        self.mColorButtonGraticules.setEnabled(graticules)
+        self.label_12.setEnabled(graticules)
+
     def on_checkBoxCountries_stateChanged(self):
         set_setting("useNE-countries", self.checkBoxCountries.isChecked())
+        self.update_source_widgets()
 
     def on_checkBoxGraticules_stateChanged(self):
         set_setting("useNE-graticules", self.checkBoxGraticules.isChecked())
+        self.update_source_widgets()
 
     def on_checkBoxS2cloudless_stateChanged(self):
         set_setting("useS2cloudless", self.checkBoxS2cloudless.isChecked())

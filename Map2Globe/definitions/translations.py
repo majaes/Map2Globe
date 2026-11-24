@@ -36,9 +36,14 @@ FR = {
     "Search": "Rechercher",
     "Maximum number of addresses to list:": "Nombre maximal d'adresses à lister :",
     # --- UI: visualisation ---
-    "  Line": "  Contour",
-    "  Oceans": "  Océans",
-    "  Countries": "  Pays",
+    "Halo / outline": "Halo / contour",
+    "Colors": "Couleurs",
+    "Address or place name": "Adresse ou nom de lieu",
+    "Build the globe from the settings above": "Construire le globe avec les réglages ci-dessus",
+    "Natural Earth countries, bundled with the plugin (works offline)":
+        "Pays Natural Earth, fournis avec le plugin (fonctionne hors ligne)",
+    "Needs an Internet connection. Non-commercial use only (CC BY-NC-SA 4.0)":
+        "Nécessite une connexion Internet. Usage non commercial uniquement (CC BY-NC-SA 4.0)",
     "Optional visualizations": "Visualisations facultatives",
     "Halo type": "Type de halo",
     "Halo, no oceans": "Halo, sans océans",
