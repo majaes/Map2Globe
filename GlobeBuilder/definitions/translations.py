@@ -47,7 +47,7 @@ FR = {
     # --- UI: mise en page ---
     "Apply changes": "Appliquer les modifications",
     "Add the Globe to a Map": "Ajouter le globe à la carte",
-    "Cancel the Globe": "Annuler le globe",
+    "Add a flat map": "Ajouter une carte à plat",
     # --- Attributions ---
     'This plugin uses the <a href="https://wiki.openstreetmap.org/wiki/Nominatim">OpenStreetMap Nominatim</a> '
     'geocoding API. Please <b>use a maximum of 1 geocoding request per second</b>. '
@@ -93,8 +93,9 @@ FR = {
         "Il n’y a pas encore de globe à mettre à jour : ajoutez d’abord le globe à la carte",
     "Add the globe to the map first: there is nothing to update yet":
         "Ajoutez d’abord le globe à la carte : il n’y a encore rien à mettre à jour",
-    "Remove the globe and restore the flat map": "Supprimer le globe et restaurer la carte à plat",
-    "There is no globe to cancel": "Il n’y a pas de globe à annuler",
+    "Switch back to the flat map and keep the plugin's layers (the Halo and Oceans layers are hidden)":
+        "Revenir à la carte à plat en gardant les couches du plugin (les couches Halo et Oceans sont masquées)",
+    "There is no globe in the map": "Il n’y a pas de globe dans la carte",
     "Traceback": "Détail de l'erreur",
 }
 

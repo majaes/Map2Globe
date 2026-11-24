@@ -24,10 +24,27 @@ import shutil
 import tempfile
 import uuid
 
-from qgis.core import (QgsApplication, QgsCoordinateTransform, QgsGeometry, QgsProject, QgsRectangle,
+from qgis.core import (QgsApplication, QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsGeometry, QgsProject, QgsRectangle,
                        QgsVectorFileWriter, QgsVectorLayer, QgsWkbTypes)
 
 from ...definitions.settings import WGS84
+
+
+def crs_from_proj(proj_string):
+    """CRS for a PROJ string, or None if it is invalid.
+
+    Depending on the QGIS/PROJ setup `createFromProj()` can wrongly identify a custom projection as a standard
+    CRS (e.g. an object with authid EPSG:4326 but the orthographic definition, which then behaves as WGS 84
+    once assigned to a layer). In that case the CRS is rebuilt from its WKT, which keeps the real definition.
+    """
+    crs = QgsCoordinateReferenceSystem()
+    if not crs.createFromProj(proj_string):
+        return None
+    if crs.authid():
+        clean = QgsCoordinateReferenceSystem()
+        if clean.createFromWkt(crs.toWkt()) and clean.isValid() and not clean.authid():
+            return clean
+    return crs
 
 
 def data_dir():
@@ -73,7 +90,13 @@ def persist_layer(layer, file_stem, name=None):
         if not _no_error(result[0]):
             return layer
         saved = QgsVectorLayer("{}|layername={}".format(path, file_stem), name, "ogr")
-        return saved if saved.isValid() else layer
+        if not saved.isValid():
+            return layer
+        # The CRS read back from the file can differ from the one that was written (e.g. matched to another
+        # registered user CRS): the geometries were written in the original one, so enforce it.
+        if saved.crs() != layer.crs():
+            saved.setCrs(layer.crs())
+        return saved
     except Exception:  # never let a saving problem prevent the globe from being built
         return layer
 

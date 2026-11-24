@@ -3,10 +3,10 @@ import os
 
 from qgis.PyQt.QtCore import QCoreApplication
 from qgis.PyQt.QtGui import QColor
-from qgis.core import QgsCoordinateReferenceSystem, QgsFeature, QgsGeometry, QgsProject, QgsVectorLayer
+from qgis.core import QgsFeature, QgsGeometry, QgsProject, QgsVectorLayer
 
 from ..core.globe import Globe
-from ..core.utils.utils import data_dir, persist_layer
+from ..core.utils.utils import crs_from_proj, data_dir, persist_layer
 from ..definitions.projections import Projections
 from ..definitions.translations import TRANSLATIONS, DictTranslator
 from ..qgis_plugin_tools.tools.i18n import tr
@@ -16,8 +16,8 @@ ORTHO = "+proj=ortho +lat_0=42.5 +lon_0=0.5 +x_0=0 +y_0=0 +a=6370997 +b=6370997 
 
 def _memory_layer(crs_string=ORTHO):
     layer = QgsVectorLayer("Polygon", "tmp", "memory")
-    crs = QgsCoordinateReferenceSystem()
-    assert crs.createFromProj(crs_string)
+    crs = crs_from_proj(crs_string)
+    assert crs is not None
     layer.setCrs(crs)
     feature = QgsFeature()
     feature.setGeometry(QgsGeometry.fromPointXY(__import__("qgis.core", fromlist=["x"]).QgsPointXY(0, 0)).buffer(1000, 16))
@@ -81,3 +81,9 @@ def test_countries_layer_is_called_pays_in_french():
 def test_refresh_legend_without_a_layer_tree_view_is_harmless(globe):
     layer = QgsVectorLayer("Polygon", "x", "memory")
     globe.refresh_legend(layer)  # the mocked iface has no layerTreeView(): must not raise
+
+
+def test_crs_from_proj_never_returns_a_standard_crs_for_a_custom_projection():
+    crs = crs_from_proj(ORTHO)
+    assert crs is not None and crs.authid() == "" and "+proj=ortho" in crs.toProj()
+    assert crs_from_proj("+proj=nonsense") is None

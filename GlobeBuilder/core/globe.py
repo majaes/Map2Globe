@@ -23,12 +23,12 @@ import logging
 import os
 
 from qgis.PyQt.QtCore import QTimer
-from qgis.core import (QgsProject, QgsCoordinateReferenceSystem, Qgis, QgsRasterLayer, QgsVectorLayer,
+from qgis.core import (QgsApplication, QgsProject, QgsCoordinateReferenceSystem, Qgis, QgsRasterLayer, QgsVectorLayer,
                        QgsMapSettings, QgsRectangle)
 
 from .graticules import Graticules
 from .halo import Halo
-from .utils.utils import local_data_copy
+from .utils.utils import crs_from_proj, local_data_copy
 from ..definitions.projections import Projections
 from ..definitions.settings import (LayerConnectionType, S2CLOUDLESS_WMTS_URL, LOCAL_DATA_DIR,
                                     DEFAULT_LAYER_CONNECTION_TYPE, NATURAL_EARTH_BASE_URL,
@@ -111,7 +111,10 @@ class Globe:
 
     @staticmethod
     def exists_in_map():
-        """True if a globe built by the plugin is currently shown in the map (workspace)."""
+        """True if a globe built by the plugin is currently shown: its layers are visible and the project
+        uses the globe's projection (after "Add a flat map" the layers stay but the map is flat again)."""
+        if not Globe.is_globe_crs(QgsProject.instance().crs()):
+            return False
         group = Globe.find_group()
         if group is None:
             return False
@@ -214,15 +217,14 @@ class Globe:
     def remember_flat_state(self):
         """Remember the flat map (project CRS and view) before it is turned into a globe.
 
-        An existing entry is kept while the project is still in a custom (globe) CRS, so that building the
+        Nothing is remembered while the project is already in the globe's projection, so that building the
         globe several times doesn't make us "remember" the globe itself.
         """
         crs = self.qgis_instance.crs()
-        is_flat = crs.isValid() and crs.authid() != ""
-        has_entry = self.qgis_instance.readEntry(Globe.FLAT_STATE_SCOPE, "flat_crs", "")[1]
-        if has_entry and not is_flat:
+        if Globe.is_globe_crs(crs):
             return
-        definition = ("auth:" + crs.authid()) if is_flat else ("proj:" + crs.toProj() if crs.isValid() else "")
+        definition = ("auth:" + crs.authid()) if crs.isValid() and crs.authid() else \
+            ("proj:" + crs.toProj() if crs.isValid() else "")
         self.qgis_instance.writeEntry(Globe.FLAT_STATE_SCOPE, "flat_crs", definition)
         extent = self.iface.mapCanvas().extent()
         self.qgis_instance.writeEntry(
@@ -248,20 +250,19 @@ class Globe:
         rect = QgsRectangle(x_min, y_min, x_max, y_max)
         return None if rect.isEmpty() else rect
 
-    def remove_globe(self):
-        """Remove the layers built by the plugin and give the map back its flat projection and view.
+    def show_flat_map(self):
+        """Switch from the globe back to the flat map, keeping the plugin's layers.
 
-        Layers the user put in the Globe group are left alone (the group is then kept too).
+        The project gets its flat projection and view back. The Halo and Oceans layers are discs built for
+        the globe's projection and look wrong on a flat map, so they are hidden (not deleted); the other
+        layers (countries, graticules...) stay visible. Building the globe again makes everything visible.
         """
         group = Globe.find_group()
         if group is not None:
-            managed = Globe.managed_layer_names()
-            for node in list(group.findLayers()):
-                layer = node.layer()
-                if layer is not None and layer.name() in managed:
-                    self.qgis_instance.removeMapLayer(layer.id())
-            if not group.children():
-                self.qgis_instance.layerTreeRoot().removeChildNode(group)
+            globe_shaped = {Halo.LAYER_NAME, Halo.OCEANS_LAYER_NAME}
+            for node in group.findLayers():
+                if node.layer() is not None and node.layer().name() in globe_shaped:
+                    node.setItemVisibilityChecked(False)
 
         self.qgis_instance.setCrs(self._remembered_crs())
         canvas = self.iface.mapCanvas()
@@ -293,11 +294,44 @@ class Globe:
         # Change to wgs84 to activate the changes in origin
         self.qgis_instance.setCrs(WGS84)
         proj_string = self.projection.value.proj_str(self.origin)
-        crs = QgsCoordinateReferenceSystem()
-        if not crs.createFromProj(proj_string):
+        crs = crs_from_proj(proj_string)
+        if crs is None:
             LOGGER.warning(tr(u"Could not create the globe's custom projection"), extra=bar_msg())
             return
-        self.qgis_instance.setCrs(crs)
+        self.qgis_instance.setCrs(self.named_crs(crs))
+
+    # Prefix of the name given to the globe's projection (shown by QGIS instead of "unknown CRS")
+    GLOBE_CRS_NAME_PREFIX = "Globe Builder - "
+
+    def named_crs(self, crs):
+        """Return the globe's projection as a named QGIS user CRS ("Globe Builder - <projection>").
+
+        QGIS shows a custom projection without code as "unknown CRS". One user CRS is kept per projection
+        and updated in place when the origin changes (no pile-up of entries). If this QGIS can't register
+        user CRSs, the unnamed CRS is returned.
+        """
+        try:
+            registry = QgsApplication.coordinateReferenceSystemRegistry()
+            name = Globe.GLOBE_CRS_NAME_PREFIX + self.projection.value.name
+            existing = [details for details in registry.userCrsList() if details.name == name]
+            if existing:
+                user_id = existing[0].id
+                registered = registry.updateUserCrs(user_id, crs, name)
+            else:
+                user_id = registry.addUserCrs(crs, name)
+                registered = user_id >= 0
+            if registered:
+                named = QgsCoordinateReferenceSystem("USER:{}".format(user_id))
+                if named.isValid():
+                    return named
+        except Exception:  # older QGIS versions: keep the unnamed CRS
+            LOGGER.debug("Could not register the globe's CRS as a named user CRS", exc_info=True)
+        return crs
+
+    @staticmethod
+    def is_globe_crs(crs):
+        """True for the globe's projection (named, or an unnamed custom CRS created by an older version)."""
+        return crs.isValid() and (crs.description().startswith(Globe.GLOBE_CRS_NAME_PREFIX) or crs.authid() == "")
 
     def zoom_to_globe(self):
         """Fit the canvas to the whole globe.

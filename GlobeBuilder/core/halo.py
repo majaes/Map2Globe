@@ -23,7 +23,7 @@ from qgis.core import (QgsFillSymbol, QgsEffectStack, QgsDropShadowEffect, QgsIn
                        QgsCoordinateTransform, QgsProject)
 from qgis.gui import QgisInterface
 
-from .utils.utils import persist_layer
+from .utils.utils import crs_from_proj, persist_layer
 from ..definitions.projections import Projections
 from ..definitions.settings import (TRANSPARENT_COLOR, HaloDrawMethod, EARTH_RADIUS, DEFAULT_HALO_DRAW_METHOD,
                                     DEFAULT_NUMBER_OF_SEGMENTS, WGS84)
@@ -55,10 +55,11 @@ class Halo:
         self.iface.mainWindow().blockSignals(True)
         name = self.OCEANS_LAYER_NAME if fill_color is not None else self.LAYER_NAME
         layer = QgsVectorLayer(draw_method.value, name, "memory")
-        crs = layer.crs()
-        if not crs.createFromProj(proj_string):
+        crs = crs_from_proj(proj_string)
+        if crs is None:
             LOGGER.warning(tr(u"Could not create the globe's custom projection for the halo"))
-        layer.setCrs(crs)
+        else:
+            layer.setCrs(crs)
         self.iface.mainWindow().blockSignals(False)
 
         feature = QgsFeature()

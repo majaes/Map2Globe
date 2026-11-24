@@ -148,6 +148,7 @@ def test_no_globe_in_an_empty_project(globe):
 
 def test_globe_exists_in_map_only_while_visible(globe):
     globe.add_halo(False, QColor('#ffffff'), QColor('#a6cee3'))
+    globe.change_project_projection()
     assert Globe.exists_in_map()
     globe.set_group_visibility(False)
     assert not Globe.exists_in_map()
@@ -162,44 +163,62 @@ def test_foreign_layers_in_the_group_are_not_a_globe(globe):
     assert not Globe.exists_in_map()
 
 
-def test_remove_globe_deletes_the_plugin_layers_and_the_empty_group(globe):
+def test_flat_map_keeps_the_plugin_layers_and_hides_the_globe_shaped_ones(globe):
+    globe.load_data(False, True, False, QColor(Qt.GlobalColor.blue), QColor(Qt.GlobalColor.blue), '110m', 10)
     globe.add_halo(False, QColor('#ffffff'), QColor('#a6cee3'), halo_with_fill=True)
+    globe.change_project_projection()
     assert Globe.exists_in_map()
-    globe.remove_globe()
-    assert Globe.find_group() is None
-    assert not Globe.exists_in_map()
-    assert not QgsProject.instance().mapLayersByName("Oceans")
-    assert not QgsProject.instance().mapLayersByName("Halo")
+    globe.show_flat_map()
+    nodes = {node.layer().name(): node for node in globe.group.findLayers()}
+    assert set(nodes) == {"Countries", "Halo", "Oceans"}  # nothing deleted
+    assert nodes["Countries"].itemVisibilityChecked()
+    assert not nodes["Halo"].itemVisibilityChecked() and not nodes["Oceans"].itemVisibilityChecked()
+    assert not Globe.exists_in_map()  # the map is flat again: "Apply changes" must be disabled
 
 
-def test_remove_globe_keeps_layers_added_by_the_user(globe):
+def test_flat_map_keeps_layers_added_by_the_user(globe):
     own = QgsVectorLayer("Polygon", "my own layer", "memory")
     QgsProject.instance().addMapLayer(own, False)
     globe.group.insertLayer(0, own)
     globe.add_halo(False, QColor('#ffffff'), QColor('#a6cee3'))
-    globe.remove_globe()
-    group = Globe.find_group()
-    assert group is not None
-    assert [node.layer().name() for node in group.findLayers()] == ["my own layer"]
+    globe.change_project_projection()
+    globe.show_flat_map()
+    assert "my own layer" in [node.layer().name() for node in globe.group.findLayers()]
 
 
-def test_remove_globe_restores_the_flat_projection(globe):
+def test_flat_map_restores_the_flat_projection(globe):
     QgsProject.instance().setCrs(QgsCoordinateReferenceSystem("EPSG:3857"))
     globe.remember_flat_state()
     globe.add_halo(False, QColor('#ffffff'), QColor('#a6cee3'))
     globe.change_project_projection()
-    assert QgsProject.instance().crs().authid() == ""  # the custom globe CRS
+    assert Globe.is_globe_crs(QgsProject.instance().crs())
     globe.remember_flat_state()  # building again must not "remember" the globe CRS
-    globe.remove_globe()
+    globe.show_flat_map()
     assert QgsProject.instance().crs().authid() == "EPSG:3857"
     assert not QgsProject.instance().readEntry("GlobeBuilder", "flat_crs", "")[1]
 
 
-def test_remove_globe_without_remembered_state_falls_back_to_wgs84(globe):
+def test_flat_map_without_remembered_state_falls_back_to_wgs84(globe):
     globe.add_halo(False, QColor('#ffffff'), QColor('#a6cee3'))
     globe.change_project_projection()
-    globe.remove_globe()
+    globe.show_flat_map()
     assert QgsProject.instance().crs().authid() == "EPSG:4326"
+
+
+def test_globe_crs_is_named_and_a_single_entry_is_reused(globe):
+    names = []
+    ids = []
+    for origin in ({'lat': 3.0, 'lon': 11.0}, {'lat': 42.5, 'lon': 0.5}, {'lat': -17.0, 'lon': 178.0}):
+        globe.set_origin(origin)
+        globe.change_project_projection()
+        crs = QgsProject.instance().crs()
+        names.append(crs.description())
+        ids.append(crs.authid())
+        assert "lat_0={}".format(origin['lat']) in crs.toProj()  # the entry follows the origin
+    assert all(name == "Globe Builder - Azimuthal Orthographic" for name in names)
+    assert len(set(ids)) == 1 and ids[0].startswith("USER:")
+    assert Globe.is_globe_crs(QgsProject.instance().crs())
+    assert not Globe.is_globe_crs(QgsCoordinateReferenceSystem("EPSG:4326"))
 
 
 def test_adding_oceans_keeps_the_canvas_color(globe, qgis_canvas):

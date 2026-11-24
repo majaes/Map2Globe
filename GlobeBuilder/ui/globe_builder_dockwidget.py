@@ -105,7 +105,8 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         for signal in (self.qgis_instance.layerTreeRoot().addedChildren,
                        self.qgis_instance.layerTreeRoot().removedChildren,
                        self.qgis_instance.layerTreeRoot().visibilityChanged,
-                       self.qgis_instance.cleared, self.qgis_instance.readProject):
+                       self.qgis_instance.cleared, self.qgis_instance.readProject,
+                       self.qgis_instance.crsChanged):
             signal.connect(self.update_buttons_state)
         self.comboBoxProjections.currentTextChanged.connect(self.projection_changed)
 
@@ -244,11 +245,10 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.update_buttons_state()
 
     @pyqtSlot()
-    def on_pushButtonCancel_clicked(self):
-        """Remove the globe and give the map back its flat projection and view."""
+    def on_pushButtonFlatMap_clicked(self):
+        """Switch from the globe to the flat map, keeping the plugin's layers."""
         if Globe.exists_in_map():
-            self.globe.suspend_auto_crs_setup()
-            self.globe.remove_globe()
+            self.globe.show_flat_map()
         self.update_buttons_state()
 
     def update_map_globe(self):
@@ -284,14 +284,15 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.update_buttons_state()
 
     def update_buttons_state(self, *args):
-        """"Apply changes" and "Cancel the globe" only make sense when a globe already exists in the map."""
+        """"Apply changes" and "Add a flat map" only make sense while the map shows a globe."""
         has_globe = Globe.exists_in_map()
         self.pushButtonApplyVisualizations.setEnabled(has_globe)
         self.pushButtonApplyVisualizations.setToolTip(
             "" if has_globe else tr(u"Add the globe to the map first: there is nothing to update yet"))
-        self.pushButtonCancel.setEnabled(has_globe)
-        self.pushButtonCancel.setToolTip(
-            tr(u"Remove the globe and restore the flat map") if has_globe else tr(u"There is no globe to cancel"))
+        self.pushButtonFlatMap.setEnabled(has_globe)
+        self.pushButtonFlatMap.setToolTip(
+            tr(u"Switch back to the flat map and keep the plugin's layers (the Halo and Oceans layers are hidden)")
+            if has_globe else tr(u"There is no globe in the map"))
 
     def populate_comboBoxProjections(self, *args):
         try:

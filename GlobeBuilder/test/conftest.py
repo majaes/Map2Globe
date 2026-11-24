@@ -30,14 +30,29 @@ pytest-qgis (https://pypi.org/project/pytest-qgis) contains the following helpfu
 #  You should have received a copy of the GNU General Public License
 #  along with GlobeBuilder.  If not, see <https://www.gnu.org/licenses/>.
 
+import os
+import shutil
+
 import pytest
+from qgis.core import QgsApplication
 
 from ..core.globe import Globe
 from ..definitions.projections import Projections
 
 
+def ensure_user_crs_database():
+    """The test profile has an empty (0 byte) user database, in which no user CRS can be registered: give it the
+    schema a real QGIS profile has, by copying the template shipped with QGIS."""
+    path = QgsApplication.qgisUserDatabaseFilePath()
+    if not os.path.exists(path) or os.path.getsize(path) == 0:
+        template = os.path.join(QgsApplication.pkgDataPath(), "resources", "qgis.db")
+        if os.path.exists(template):
+            shutil.copyfile(template, path)
+
+
 @pytest.fixture(scope='function')
 def globe(qgis_new_project, qgis_iface) -> Globe:
+    ensure_user_crs_database()
     globe = Globe(qgis_iface)
     globe.set_projection(Projections.AZIMUTHAL_ORTHOGRAPHIC)
     return globe
