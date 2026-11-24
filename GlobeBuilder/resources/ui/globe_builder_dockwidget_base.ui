@@ -251,7 +251,7 @@
                  <item>
                   <widget class="QRadioButton" name="radioButtonName">
                    <property name="text">
-                    <string>Country (NAME field)</string>
+                    <string>Country</string>
                    </property>
                   </widget>
                  </item>
@@ -527,28 +527,28 @@
                  <item>
                   <widget class="QRadioButton" name="radioButtonHHalo">
                    <property name="text">
-                    <string>Halo, no fill</string>
+                    <string>Halo, no oceans</string>
                    </property>
                   </widget>
                  </item>
                  <item>
                   <widget class="QRadioButton" name="radioButtonHFillWithHalo">
                    <property name="text">
-                    <string>Halo, fill</string>
+                    <string>Halo, with oceans</string>
                    </property>
                   </widget>
                  </item>
                  <item>
                   <widget class="QRadioButton" name="radioButtonHOutline">
                    <property name="text">
-                    <string>Outline, no fill</string>
+                    <string>Outline, no oceans</string>
                    </property>
                   </widget>
                  </item>
                  <item>
                   <widget class="QRadioButton" name="radioButtonHFill">
                    <property name="text">
-                    <string>Outline, fill</string>
+                    <string>Outline, with oceans</string>
                    </property>
                    <property name="checked">
                     <bool>true</bool>

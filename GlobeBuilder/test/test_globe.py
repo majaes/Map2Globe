@@ -182,7 +182,7 @@ def test_adding_oceans_keeps_the_canvas_color(globe, qgis_canvas):
 
 def test_default_colors():
     assert DEFAULT_COUNTRIES_COLOR.name() == '#ffe9a8'
-    assert DEFAULT_HALO_COLOR.name() == '#ffffff'
+    assert DEFAULT_HALO_COLOR.name() == '#a0a0a4'
     assert DEFAULT_HALO_FILL_COLOR.name() == '#a6cee3'
 
 
