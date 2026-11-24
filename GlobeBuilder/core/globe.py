@@ -68,6 +68,31 @@ class Globe:
     # Layers manually added to the group by the user (e.g. their own basemap) are left untouched.
     MANAGED_LAYER_NAMES = {Halo.LAYER_NAME, Halo.OCEANS_LAYER_NAME, Graticules.LAYER_NAME, tr(u'Countries'), tr(u'S2 Cloudless 2018')}
 
+    @staticmethod
+    def find_group():
+        """The Globe group, or None. Unlike the `group` property it never creates the group."""
+        root = QgsProject.instance().layerTreeRoot()
+        for child in root.children():
+            if root.isGroup(child) and child.name() == Globe.GROUP_NAME:
+                return child
+        return None
+
+    @staticmethod
+    def exists_in_map():
+        """True if a globe built by the plugin is currently shown in the map (workspace)."""
+        group = Globe.find_group()
+        if group is None:
+            return False
+        nodes = [node for node in group.findLayers()
+                 if node.layer() is not None and node.layer().name() in Globe.MANAGED_LAYER_NAMES]
+        return bool(nodes) and group.itemVisibilityChecked() and any(n.itemVisibilityChecked() for n in nodes)
+
+    @staticmethod
+    def layouts_with_globe(layout_manager):
+        """The print layouts that already contain a globe map item created by the plugin."""
+        return [layout for layout in layout_manager.printLayouts()
+                if layout.itemById(Globe.LAYOUT_MAP_ITEM_ID) is not None]
+
     def delete_group(self):
         group = self.group
         if group is not None:

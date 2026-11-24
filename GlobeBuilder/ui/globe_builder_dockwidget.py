@@ -108,8 +108,16 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.layout_mngr.layoutAdded.connect(self.populate_comboBoxLayouts)
         self.layout_mngr.layoutRemoved.connect(self.populate_comboBoxLayouts)
         self.layout_mngr.layoutRenamed.connect(self.populate_comboBoxLayouts)
+        # keep "Apply changes" in sync with the existence of a globe
+        for signal in (self.layout_mngr.layoutAdded, self.layout_mngr.layoutRemoved,
+                       self.qgis_instance.layerTreeRoot().addedChildren,
+                       self.qgis_instance.layerTreeRoot().removedChildren,
+                       self.qgis_instance.layerTreeRoot().visibilityChanged,
+                       self.qgis_instance.cleared, self.qgis_instance.readProject):
+            signal.connect(self.update_apply_button_state)
         self.comboBoxProjections.currentTextChanged.connect(self.projection_changed)
 
+        self.update_apply_button_state()
         self.is_initializing = False
 
     def make_panel_compact(self):
@@ -244,27 +252,42 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
     @pyqtSlot()
     def on_pushButtonApplyVisualizations_clicked(self):
-        if not self.is_initializing:
-            # Capture the view before any CRS switch below: the canvas extent isn't
-            # guaranteed to be recalculated in the new CRS right away, which could
-            # otherwise make the "intersecting current view" selection wrong.
-            view_extent = self.iface.mapCanvas().extent()
-            view_crs = self.qgis_instance.crs()
-            coordinates = self.calculate_origin_coordinates()
-            if coordinates is not None and coordinates != self.old_coordinates:
-                self.old_coordinates = coordinates
-                self.globe.set_origin(coordinates)
-            projection = Projections.proj_from_id(self.comboBoxProjections.currentText())
-            self.old_projection = projection
-            self.globe.set_projection(projection)
-            # Always (re)apply the globe projection: the project may still be in its default CRS
-            # (e.g. EPSG:4326) even though origin/projection match the previous values, which used
-            # to leave the canvas blank/flat after "Apply changes".
-            self.globe.change_project_projection()
-            self.load_data_to_globe(view_extent=view_extent, view_crs=view_crs)
-            self.globe.set_group_visibility(True)
-            self.add_halo_to_globe()
-            self.globe.zoom_to_globe()
+        """Update the globe(s) that already exist. Never builds anything in a workspace without a globe."""
+        if self.is_initializing:
+            return
+        layouts = Globe.layouts_with_globe(self.layout_mngr)
+        in_map = Globe.exists_in_map()
+        if not layouts and not in_map:
+            self.show_warning(tr(u"There is no globe to update yet: add the globe to a map or to a layout first"))
+            self.update_apply_button_state()
+            return
+        # Layouts first: updating a layout hides the map's globe group again
+        for layout in layouts:
+            self.update_layout_globe(layout)
+        if in_map:
+            self.update_map_globe()
+        self.update_apply_button_state()
+
+    def update_map_globe(self):
+        # Capture the view before any CRS switch below: the canvas extent isn't
+        # guaranteed to be recalculated in the new CRS right away, which could
+        # otherwise make the "intersecting current view" selection wrong.
+        view_extent = self.iface.mapCanvas().extent()
+        view_crs = self.qgis_instance.crs()
+        coordinates = self.calculate_origin_coordinates()
+        if coordinates is not None and coordinates != self.old_coordinates:
+            self.old_coordinates = coordinates
+            self.globe.set_origin(coordinates)
+        projection = Projections.proj_from_id(self.comboBoxProjections.currentText())
+        self.old_projection = projection
+        self.globe.set_projection(projection)
+        # Load the data first and set the globe projection afterwards: QGIS resets the project CRS to the
+        # one of the first layer added, which would otherwise undo the projection (flat world map).
+        self.load_data_to_globe(view_extent=view_extent, view_crs=view_crs)
+        self.globe.change_project_projection()
+        self.globe.set_group_visibility(True)
+        self.add_halo_to_globe()
+        self.globe.zoom_to_globe()
 
     @pyqtSlot()
     def on_pushButtonRun_clicked(self):
@@ -277,21 +300,27 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.globe.set_group_visibility(True)
         self.add_halo_to_globe()
         self.globe.zoom_to_globe()
+        self.update_apply_button_state()
 
     @pyqtSlot()
     def on_pushButtonAddToLayout_clicked(self):
         selected_layouts = tuple(
             filter(lambda l: l.name() == self.comboBoxLayouts.currentText(), self.layout_mngr.layouts()))
         layout = selected_layouts[0] if len(selected_layouts) == 1 else create_layout("LayoutGlobe", self.qgis_instance)
+        self.update_layout_globe(layout)
+        self.update_apply_button_state()
+
+    def update_layout_globe(self, layout):
+        coordinates = self.calculate_origin_coordinates()
+        if coordinates is None:
+            return
         crs = self.qgis_instance.crs()
-        # Capture the view before the CRS switch below, same reasoning as in
-        # on_pushButtonApplyVisualizations_clicked.
+        # Capture the view before the CRS switch below, same reasoning as in update_map_globe.
         view_extent = self.iface.mapCanvas().extent()
 
         # For some reason layout mode can't handle azimuthal ortographic projection with any decimals and the
         # projection needs to be set to project level before attempting to use it in a layout
-        self.globe.set_origin(
-            {key: float("{:.0f}".format(val)) for key, val in self.calculate_origin_coordinates().items()})
+        self.globe.set_origin({key: float("{:.0f}".format(val)) for key, val in coordinates.items()})
         self.globe.set_projection(Projections.proj_from_id(self.comboBoxProjections.currentText()))
         self.globe.change_temporarily_to_globe_projection()
         self.globe.delete_group()
@@ -304,6 +333,13 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.globe.add_to_layout(layout, size=self.spinBoxGlobeSize.value())
 
         self.qgis_instance.setCrs(crs)
+
+    def update_apply_button_state(self, *args):
+        """"Apply changes" only makes sense when a globe (in the map or in a layout) already exists."""
+        has_globe = Globe.exists_in_map() or bool(Globe.layouts_with_globe(self.layout_mngr))
+        self.pushButtonApplyVisualizations.setEnabled(has_globe)
+        self.pushButtonApplyVisualizations.setToolTip(
+            "" if has_globe else tr(u"Add the globe to a map or to a layout first: there is nothing to update yet"))
 
     def populate_comboBoxLayouts(self, *args):
         self.comboBoxLayouts.clear()

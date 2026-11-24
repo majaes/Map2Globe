@@ -22,9 +22,10 @@
 import pytest
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QColor
-from qgis.core import QgsProject, QgsProcessingException, Qgis
+from qgis.core import QgsProject, QgsProcessingException, Qgis, QgsVectorLayer
 
 from ..core.globe import Globe
+from ..core.utils.utils import create_layout
 from ..definitions.projections import Projections
 from ..definitions.settings import (DEFAULT_ORIGIN, DEFAULT_COUNTRIES_COLOR, DEFAULT_HALO_COLOR,
                                     DEFAULT_HALO_FILL_COLOR)
@@ -137,6 +138,40 @@ def test_remove_halo_removes_halo_and_oceans(globe):
     globe.remove_halo()
     assert not QgsProject.instance().mapLayersByName("Halo")
     assert not QgsProject.instance().mapLayersByName("Oceans")
+
+
+def test_no_globe_in_an_empty_project(globe):
+    assert Globe.find_group() is None
+    assert not Globe.exists_in_map()
+    assert Globe.layouts_with_globe(QgsProject.instance().layoutManager()) == []
+    # the check must not create the group as a side effect
+    assert Globe.find_group() is None
+
+
+def test_globe_exists_in_map_only_while_visible(globe):
+    globe.add_halo(False, QColor('#ffffff'), QColor('#a6cee3'))
+    assert Globe.exists_in_map()
+    globe.set_group_visibility(False)
+    assert not Globe.exists_in_map()
+    globe.set_group_visibility(True)
+    assert Globe.exists_in_map()
+
+
+def test_foreign_layers_in_the_group_are_not_a_globe(globe):
+    layer = QgsVectorLayer("Polygon", "my own layer", "memory")
+    QgsProject.instance().addMapLayer(layer, False)
+    globe.group.insertLayer(0, layer)
+    assert not Globe.exists_in_map()
+
+
+def test_layout_with_globe_is_detected(globe):
+    manager = QgsProject.instance().layoutManager()
+    layout = create_layout("LayoutGlobe", QgsProject.instance())
+    assert Globe.layouts_with_globe(manager) == []
+    globe.add_halo(False, QColor('#ffffff'), QColor('#a6cee3'))
+    globe.refresh_theme()
+    globe.add_to_layout(layout)
+    assert Globe.layouts_with_globe(manager) == [layout]
 
 
 def test_adding_oceans_keeps_the_canvas_color(globe, qgis_canvas):

@@ -96,6 +96,10 @@ FR = {
     "Geocoding failed: {}": "Échec du géocodage : {}",
     "Geocoding failed: unexpected answer from the server": "Échec du géocodage : réponse inattendue du serveur",
     "No place found for this address": "Aucun lieu trouvé pour cette adresse",
+    "There is no globe to update yet: add the globe to a map or to a layout first":
+        "Il n’y a pas encore de globe à mettre à jour : ajoutez d’abord le globe à la carte ou à une mise en page",
+    "Add the globe to a map or to a layout first: there is nothing to update yet":
+        "Ajoutez d’abord le globe à la carte ou à une mise en page : il n’y a encore rien à mettre à jour",
     "Traceback": "Détail de l'erreur",
 }
 
