@@ -91,3 +91,5 @@
 * Fixed the empty/flat map after "Apply changes": the globe projection was only applied when the projection differed from its initial value, so the project could stay in EPSG:4326. It is now always re-applied.
 * Added `Globe.zoom_to_globe()`: the canvas is refitted to the whole globe after "Apply changes" / "Add the Globe to a Map", since a CRS switch leaves the old extent (degrees) interpreted as metres.
 * Minor cleanups: missing `@pyqtSlot`, a no-op assignment, and an unparsable origin no longer overrides the previous one.
+* Panel UI: the three action buttons are now stacked vertically, which lowers the panel's minimum width from ~1100 px to ~450 px (it used to squash the map canvas). The Countries/Graticules checkboxes now have visible labels, and their resolution drop-downs only show the value (`50m`, `10°`).
+* Added `dev/harness.py`: runs the panel next to a real map canvas outside QGIS (`--fr` for French, `--auto file.png` for a screenshot), so changes can be tried without reloading the plugin in QGIS.

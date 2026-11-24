@@ -19,8 +19,8 @@ FR = {
     "Visualization": "Visualisation",
     "Layout": "Mise en page",
     # --- UI: sources de données ---
-    "Countries 50m": "Pays 50m",
-    "Countries 110m": "Pays 110m",
+    "Countries": "Pays",
+    "Graticules": "Graticules",
     "Sentinel-2 cloudless": "Sentinel-2 sans nuages",
     # --- UI: centrage ---
     "Coordinates": "Coordonnées",
@@ -73,6 +73,11 @@ FR = {
 
 TRANSLATIONS = {"fr": FR}
 
+# Identifiers that go through tr() with the default context (layer names) must stay as is,
+# even though the same words are translated when they come from the .ui file.
+IDENTIFIER_CONTEXT = "@default"
+IDENTIFIERS = {"Countries", "Graticules", "Halo", "Globe", "S2 Cloudless 2018"}
+
 
 class DictTranslator(QTranslator):
     """QTranslator backed by a plain dict, ignoring the context."""
@@ -84,6 +89,8 @@ class DictTranslator(QTranslator):
     def translate(self, context, source_text, disambiguation=None, n=-1):
         # None gives Qt a null string = "no translation", so it falls back to the source text.
         # (An empty string would be taken as a valid, empty translation.)
+        if context == IDENTIFIER_CONTEXT and source_text in IDENTIFIERS:
+            return None
         return self._translations.get(source_text)
 
     def isEmpty(self):

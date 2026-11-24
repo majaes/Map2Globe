@@ -73,11 +73,15 @@ bar = QgsMessageBar(canvas)
 project = QgsProject.instance()
 bridge = QgsLayerTreeMapCanvasBridge(project.layerTreeRoot(), canvas)  # keeps the canvas in sync with the project
 
+# QGIS keeps the canvas CRS in sync with the project CRS; the bridge doesn't do that part.
+project.crsChanged.connect(lambda: canvas.setDestinationCrs(project.crs()))
+
 iface = FakeIface(window, canvas, bar)
 dock = GlobeBuilderDockWidget(iface)
 window.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock)
 window.resizeDocks([dock], [480], Qt.Orientation.Horizontal)
 window.show()
+print("dock minimumSizeHint:", dock.minimumSizeHint().width(), "x", dock.minimumSizeHint().height())
 
 if args.auto:
     def _auto():
@@ -85,7 +89,10 @@ if args.auto:
         QTimer.singleShot(2500, _grab)
 
     def _grab():
+        canvas.waitWhileRendering()
         app.processEvents()
+        print("canvas layers:", [l.name() for l in canvas.layers()], "extent:", canvas.extent().toString(0),
+              "crs:", canvas.mapSettings().destinationCrs().toProj()[:30], "size:", canvas.size().width(), canvas.size().height())
         window.grab().save(args.auto)
         print("screenshot:", args.auto)
         app.quit()

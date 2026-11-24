@@ -273,8 +273,8 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                              self.checkBoxGraticules.isChecked(), self.mColorButtonCountries.color(),
                              self.mColorButtonGraticules.color(),
                              self.get_intersecting_countries_color() if possibly_use_intersecting_colors else None,
-                             self.comboBoxCountries.currentText().split(" ")[-1],
-                             self.comboBoxGraticules.currentText().split(" ")[-1],
+                             self.comboBoxCountries.currentText().strip(),
+                             self.comboBoxGraticules.currentText().rstrip("°").strip(),
                              view_extent if view_extent is not None else self.iface.mapCanvas().extent(),
                              view_crs if view_crs is not None else self.qgis_instance.crs())
 

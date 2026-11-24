@@ -56,7 +56,7 @@
                    <item>
                     <widget class="QCheckBox" name="checkBoxCountries">
                      <property name="text">
-                      <string/>
+                      <string>Countries</string>
                      </property>
                      <property name="checked">
                       <bool>true</bool>
@@ -67,12 +67,12 @@
                     <widget class="QComboBox" name="comboBoxCountries">
                      <item>
                       <property name="text">
-                       <string>Countries 50m</string>
+                       <string>50m</string>
                       </property>
                      </item>
                      <item>
                       <property name="text">
-                       <string>Countries 110m</string>
+                       <string>110m</string>
                       </property>
                      </item>
                     </widget>
@@ -93,7 +93,7 @@
                    <item>
                     <widget class="QCheckBox" name="checkBoxGraticules">
                      <property name="text">
-                      <string/>
+                      <string>Graticules</string>
                      </property>
                      <property name="checked">
                       <bool>true</bool>
@@ -104,27 +104,27 @@
                     <widget class="QComboBox" name="comboBoxGraticules">
                      <item>
                       <property name="text">
-                       <string>Graticules 10</string>
+                       <string>10°</string>
                       </property>
                      </item>
                      <item>
                       <property name="text">
-                       <string>Graticules 2</string>
+                       <string>2°</string>
                       </property>
                      </item>
                      <item>
                       <property name="text">
-                       <string>Graticules 5</string>
+                       <string>5°</string>
                       </property>
                      </item>
                      <item>
                       <property name="text">
-                       <string>Graticules 20</string>
+                       <string>20°</string>
                       </property>
                      </item>
                      <item>
                       <property name="text">
-                       <string>Graticules 30</string>
+                       <string>30°</string>
                       </property>
                      </item>
                     </widget>
@@ -703,20 +703,7 @@
        </widget>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_3">
-        <item>
-         <spacer name="horizontalSpacer">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
+       <layout class="QVBoxLayout" name="horizontalLayout_3">
         <item>
          <widget class="QPushButton" name="pushButtonApplyVisualizations">
           <property name="text">
