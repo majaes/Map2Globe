@@ -27,6 +27,23 @@ un clic. L'interface est en français et en anglais (bouton FR / EN).*
 QGIS 4.0 or later (developed and tested on QGIS 4.0.1). The address search and the Sentinel-2 layer need an Internet
 connection; everything else works offline.
 
+### Development and test environment
+
+Map2Globe is a pure PyQGIS plugin (no external Python dependency). It was developed and tested on:
+
+| Component | Version |
+|---|---|
+| QGIS | 4.0.1 |
+| Qt | 6.8 |
+| Python | 3.12 |
+| GDAL / PROJ / GEOS | 3.12 / 9.7 / 3.14 |
+| OS | Windows 11 |
+
+How it works: the globe is a custom PROJ azimuthal orthographic projection centred on the origin you choose,
+registered as a named user CRS (*Map2Globe - ...*). The halo and the oceans are generated layers saved as files;
+the graticules are built with the QGIS Processing algorithms. An automated test suite (pytest and pytest-qgis)
+covers the globe, the language switch, the geocoder and the plugin metadata.
+
 ## Installation
 
 * **From QGIS**: Plugins > Manage and Install Plugins, search for *Map2Globe* (once published in the official plugin
