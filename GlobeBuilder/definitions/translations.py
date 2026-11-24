@@ -25,12 +25,10 @@ FR = {
     # --- UI: centrage ---
     "Coordinates": "Coordonnées",
     "'Longitude, Latitude' in decimal degrees": "« Longitude, Latitude » en degrés décimaux",
-    "Center on the selection or the current view": "Centrer sur la sélection ou la vue actuelle",
-    "Select a feature in any layer (on the map or in its attribute table, e.g. a country in the NAME column) "
-    "and the globe is centered on it. Without a selection, the centre of the current view is used.":
-        "Sélectionnez une entité dans une couche (sur la carte ou dans sa table attributaire, par exemple un pays "
-        "dans la colonne NAME) et le globe se centre dessus. Sans sélection, le centre de la vue actuelle est utilisé.",
-    "Globe centered on the {} selected feature(s) of '{}'": "Globe centré sur les {} entité(s) sélectionnée(s) de « {} »",
+    "Center to the current view": "Centrer sur la vue actuelle",
+    "Country (NAME field)": "Pays (champ NAME)",
+    "Type to search a country name": "Tapez pour rechercher un nom de pays",
+    "Choose a name from the list": "Choisissez un nom dans la liste",
     "Layer": "Couche",
     "Geocoding": "Géocodage",
     "Address for the geolocation of interest:": "Adresse du lieu d'intérêt :",

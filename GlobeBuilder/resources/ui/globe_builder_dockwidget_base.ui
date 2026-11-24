@@ -235,12 +235,34 @@
                <item>
                 <widget class="QRadioButton" name="radioButtonCenter">
                  <property name="text">
-                  <string>Center on the selection or the current view</string>
-                 </property>
-                 <property name="toolTip">
-                  <string>Select a feature in any layer (on the map or in its attribute table, e.g. a country in the NAME column) and the globe is centered on it. Without a selection, the centre of the current view is used.</string>
+                  <string>Center to the current view</string>
                  </property>
                 </widget>
+               </item>
+               <item>
+                <widget class="Line" name="line_name">
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayout_name">
+                 <item>
+                  <widget class="QRadioButton" name="radioButtonName">
+                   <property name="text">
+                    <string>Country (NAME field)</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QComboBox" name="comboBoxNames">
+                   <property name="editable">
+                    <bool>true</bool>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
                </item>
                <item>
                 <widget class="Line" name="line_4">

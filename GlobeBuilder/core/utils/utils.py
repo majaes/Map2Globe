@@ -24,7 +24,8 @@ import shutil
 import tempfile
 
 from qgis.core import QgsApplication, QgsPrintLayout, QgsFillSymbol, QgsRuleBasedRenderer, QgsFeatureRequest, \
-    QgsCoordinateTransformContext, QgsCoordinateTransform, QgsMapLayer, QgsRectangle, QgsWkbTypes
+    QgsCoordinateTransformContext, QgsCoordinateTransform, QgsGeometry, QgsProject, QgsRectangle, \
+    QgsVectorLayer, QgsWkbTypes
 
 from ...definitions.settings import WGS84
 from ...qgis_plugin_tools.tools.i18n import tr
@@ -109,50 +110,51 @@ def get_map_center_coordinates(iface, qgis_instance, frmt="{:.0f}"):
     return center
 
 
-def find_layer_with_selection(project, active_layer=None):
-    """Return the vector layer whose selection should be used: the active layer if it has one,
-    otherwise the first project vector layer with selected features (else None)."""
-    def has_selection(layer):
-        return (layer is not None and layer.type() == QgsMapLayer.VectorLayer
-                and layer.selectedFeatureCount() > 0)
+def get_geometries_center(geometries, crs, project, decimals=4):
+    """Longitude/latitude (WGS84) of the centre of some geometries given in `crs`, or None.
 
-    if has_selection(active_layer):
-        return active_layer
-    for layer in project.mapLayers().values():
-        if has_selection(layer):
-            return layer
-    return None
-
-
-def get_selection_center(layer, project, decimals=4):
-    """Longitude/latitude (WGS84) of the centre of the layer's selected features, or None.
-
-    The centre of the bounding box is used. A selection that wraps around the antimeridian
+    The centre of the bounding box is used. Geometries that wrap around the antimeridian
     (e.g. USA, Russia, Fiji: bounding box wider than 180 degrees) would otherwise get a centre
-    on the wrong side of the world, so the largest part of the selection is used instead.
+    on the wrong side of the world, so the largest part is used instead.
     """
-    geometries = [f.geometry() for f in layer.selectedFeatures() if f.hasGeometry() and not f.geometry().isEmpty()]
+    geometries = [g for g in geometries if g is not None and not g.isEmpty()]
     if not geometries:
         return None
 
-    transform = None
-    if layer.crs() != WGS84:
-        transform = QgsCoordinateTransform(layer.crs(), WGS84, project)
+    transform = QgsCoordinateTransform(crs, WGS84, project) if crs != WGS84 else None
     rect = QgsRectangle()
     rect.setNull()
     parts = []
     for geom in geometries:
-        geom = type(geom)(geom)  # copy: never alter the layer's own geometry
+        geom = QgsGeometry(geom)  # copy: never alter the layer's own geometry
         if transform is not None:
             geom.transform(transform)
         rect.combineExtentWith(geom.boundingBox())
         parts.extend(geom.asGeometryCollection())
 
     if rect.width() > 180 and parts:
-        polygon_parts = [p for p in parts if QgsWkbTypes.geometryType(p.wkbType()) == QgsWkbTypes.PolygonGeometry]
-        pool = polygon_parts or parts
-        biggest = max(pool, key=lambda p: p.area() if polygon_parts else p.length())
+        polygons = [p for p in parts if QgsWkbTypes.geometryType(p.wkbType()) == QgsWkbTypes.PolygonGeometry]
+        biggest = max(polygons, key=lambda p: p.area()) if polygons else max(parts, key=lambda p: p.length())
         rect = biggest.boundingBox()
 
     center = rect.center()
     return {'lon': round(center.x(), decimals), 'lat': round(max(-90.0, min(90.0, center.y())), decimals)}
+
+
+def load_name_centers(path, field='NAME'):
+    """{name: {'lon':.., 'lat':..}} for every feature of the vector file `path`, from its `field` column.
+
+    The layer is only used temporarily (never added to the project) and released at once, so the
+    file isn't kept open.
+    """
+    layer = QgsVectorLayer(path, "names", "ogr")
+    if not layer.isValid() or layer.fields().indexFromName(field) < 0:
+        return {}
+    centers = {}
+    for feature in layer.getFeatures():
+        name = feature[field]
+        center = get_geometries_center([feature.geometry()], layer.crs(), QgsProject.instance())
+        if name and center is not None:
+            centers[str(name)] = center
+    del layer
+    return centers
