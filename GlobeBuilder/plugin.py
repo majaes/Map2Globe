@@ -23,6 +23,7 @@ from qgis.PyQt.QtCore import QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
 
+from .definitions.translations import TRANSLATIONS, DictTranslator
 from .qgis_plugin_tools.tools.custom_logging import setup_logger, teardown_logger
 from .qgis_plugin_tools.tools.i18n import setup_translation, tr
 from .qgis_plugin_tools.tools.resources import plugin_name, resources_path
@@ -47,13 +48,16 @@ class GlobeBuilder:
 
         # initialize locale
         locale, file_path = setup_translation()
+        # Keep a reference: a translator that gets garbage collected silently stops working.
+        self.translator = None
         if file_path:
-            translator = QTranslator()
-            translator.load(file_path)
+            self.translator = QTranslator()
+            self.translator.load(file_path)
+        elif locale[:2] in TRANSLATIONS:
+            self.translator = DictTranslator(TRANSLATIONS[locale[:2]])
+        if self.translator is not None:
             # noinspection PyCallByClass,PyArgumentList
-            QCoreApplication.installTranslator(translator)
-        else:
-            pass
+            QCoreApplication.installTranslator(self.translator)
 
         # Declare instance attributes
         self.actions = []

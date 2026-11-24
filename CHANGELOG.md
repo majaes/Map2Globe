@@ -85,4 +85,9 @@
 
 * Fixed "Add the Globe to a Layout" showing a tiny, flat-looking crop instead of the full globe: the `QgsMapSettings` used to compute the map item's initial extent (`ms.fullExtent()`) never had its destination CRS set to the globe's orthographic projection, so the extent was computed in degrees (a geographic default) instead of metres, then applied as if it *were* in metres — zooming the map item in on a sliver right at the projection's centre. Added the missing `ms.setDestinationCrs(crs)` before computing the extent.
 
-##
+### 0.7.4 - 24/11/2026
+
+* Added a built-in French translation (`definitions/translations.py`), loaded automatically when QGIS runs in French. It's a plain Python dictionary served through a `QTranslator`, so no `lrelease` compilation is needed. The translator is also now kept alive (it used to be garbage collected). Layer/group names stay untranslated because the plugin uses them as identifiers.
+* Fixed the empty/flat map after "Apply changes": the globe projection was only applied when the projection differed from its initial value, so the project could stay in EPSG:4326. It is now always re-applied.
+* Added `Globe.zoom_to_globe()`: the canvas is refitted to the whole globe after "Apply changes" / "Add the Globe to a Map", since a CRS switch leaves the old extent (degrees) interpreted as metres.
+* Minor cleanups: missing `@pyqtSlot`, a no-op assignment, and an unparsable origin no longer overrides the previous one.

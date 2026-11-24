@@ -179,6 +179,27 @@ class Globe:
             return
         self.qgis_instance.setCrs(crs)
 
+    def zoom_to_globe(self):
+        """Fit the canvas to the whole globe.
+
+        Changing the project CRS keeps the canvas extent numerically unchanged, so degree values
+        (e.g. -180..180) end up interpreted as metres in the globe CRS: a tiny sliver around the
+        projection centre, i.e. an apparently empty map. Refit the view after every (re)build.
+        """
+        layers = [node.layer() for node in self.group.findLayers() if node.layer() is not None]
+        if not layers:
+            return
+        ms = QgsMapSettings()
+        ms.setLayers(layers)
+        ms.setDestinationCrs(self.qgis_instance.crs())
+        rect = QgsRectangle(ms.fullExtent())
+        if rect.isEmpty():
+            return
+        rect.scale(1.05)
+        canvas = self.iface.mapCanvas()
+        canvas.setExtent(rect)
+        canvas.refresh()
+
     def change_temporarily_to_globe_projection(self):
         crs = self.qgis_instance.crs()
         self.change_project_projection()

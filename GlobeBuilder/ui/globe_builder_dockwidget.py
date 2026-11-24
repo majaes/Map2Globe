@@ -127,6 +127,7 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.spinBoxMaxResults.setEnabled(is_checked)
 
 
+    @pyqtSlot(bool)
     def on_radioButtonHFillWithHalo_toggled(self, is_checked):
         self.mColorButtonHFill.setEnabled(is_checked or self.radioButtonHFill.isChecked())
 
@@ -174,19 +175,22 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             view_extent = self.iface.mapCanvas().extent()
             view_crs = self.qgis_instance.crs()
             coordinates = self.calculate_origin_coordinates()
-            if coordinates != self.old_coordinates:
+            if coordinates is not None and coordinates != self.old_coordinates:
                 self.old_coordinates = coordinates
                 self.globe.set_origin(coordinates)
             projection = Projections.proj_from_id(self.comboBoxProjections.currentText())
-            if projection != self.old_projection:
-                self.old_projection = projection
-                self.globe.set_projection(projection)
-                self.globe.change_project_projection()
+            self.old_projection = projection
+            self.globe.set_projection(projection)
+            # Always (re)apply the globe projection: the project may still be in its default CRS
+            # (e.g. EPSG:4326) even though origin/projection match the previous values, which used
+            # to leave the canvas blank/flat after "Apply changes".
+            self.globe.change_project_projection()
             self.load_data_to_globe(view_extent=view_extent, view_crs=view_crs)
             self.globe.change_background_color(self.mColorButtonBackground.color())
             self.mColorButtonBackground.setColor(self.iface.mapCanvas().canvasColor())
             self.globe.set_group_visibility(True)
             self.add_halo_to_globe()
+            self.globe.zoom_to_globe()
 
     @pyqtSlot()
     def on_pushButtonRun_clicked(self):
@@ -200,6 +204,7 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.globe.change_project_projection()
         self.globe.set_group_visibility(True)
         self.add_halo_to_globe()
+        self.globe.zoom_to_globe()
 
     @pyqtSlot()
     def on_pushButtonAddToLayout_clicked(self):
@@ -294,7 +299,6 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             elif self.radioButtonGeocoding.isChecked():
                 coordinates = self.get_geocoded_coordinates()
                 if not coordinates:
-                    coordinates = coordinates
                     raise ValueError(tr(u"Make sure to select an item from the Geolocation list"))
 
             elif self.radioButtonLayer.isChecked():
