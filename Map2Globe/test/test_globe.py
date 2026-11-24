@@ -173,17 +173,23 @@ def test_flat_map_keeps_the_plugin_layers_and_hides_the_globe_shaped_ones(globe)
     nodes = {node.layer().name(): node for node in globe.group.findLayers()}
     assert set(nodes) == {"Countries", "Halo", "Oceans"}  # nothing deleted
     assert nodes["Countries"].itemVisibilityChecked()
-    assert not nodes["Halo"].itemVisibilityChecked() and not nodes["Oceans"].itemVisibilityChecked()
+    assert not nodes["Halo"].itemVisibilityChecked()
+    # the oceans are now those of a flat map: visible, in WGS84, covering the whole world
+    assert nodes["Oceans"].itemVisibilityChecked() and nodes["Oceans"].layer().crs().authid() == "EPSG:4326"
+    assert nodes["Oceans"].layer().extent().width() == 360
     assert not Globe.exists_in_map()  # the map is flat again: "Apply changes" must be disabled
 
 
-def test_globe_shaped_layers_are_hidden_when_the_map_is_flat_by_any_means(globe):
-    globe.add_halo(False, QColor('#ffffff'), QColor('#a6cee3'), halo_with_fill=True)
+def test_oceans_disc_becomes_world_oceans_when_the_map_is_flat_by_any_means(globe):
+    globe.add_halo(False, QColor("#ffffff"), QColor("#a6cee3"), halo_with_fill=True)
     globe.change_project_projection()
-    # The user changes the CRS by hand (not with the plugin's button): the helper still hides the discs
     QgsProject.instance().setCrs(QgsCoordinateReferenceSystem("EPSG:4326"))
-    Globe.hide_globe_shaped_layers()
-    assert all(not node.itemVisibilityChecked() for node in globe.group.findLayers())
+    globe.adapt_to_flat_map()
+    nodes = {node.layer().name(): node for node in globe.group.findLayers()}
+    assert not nodes["Halo"].itemVisibilityChecked()
+    assert nodes["Oceans"].layer().extent().width() == 360 and nodes["Oceans"].itemVisibilityChecked()
+    globe.adapt_to_flat_map()  # idempotent: no second Oceans layer
+    assert len(Globe.layers_named("Oceans")) == 1
 
 
 def test_flat_map_keeps_layers_added_by_the_user(globe):

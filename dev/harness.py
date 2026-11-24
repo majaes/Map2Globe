@@ -19,6 +19,7 @@ sys.path.insert(0, ROOT)
 parser = argparse.ArgumentParser()
 parser.add_argument("--fr", action="store_true")
 parser.add_argument("--auto", metavar="FILE")
+parser.add_argument("--flat", action="store_true", help="with --auto: use oceans, build the globe, then switch back to flat")
 args = parser.parse_args()
 
 from qgis.core import QgsApplication, QgsCoordinateReferenceSystem, QgsLayerTreeModel, QgsProject
@@ -97,14 +98,19 @@ print("dock minimumSizeHint:", dock.minimumSizeHint().width(), "x", dock.minimum
 
 if args.auto:
     def _auto():
+        if args.flat:
+            dock.radioButtonHFill.setChecked(True)
         dock.pushButtonRun.click()
-        QTimer.singleShot(2500, _grab)
+        if args.flat:
+            QTimer.singleShot(1500, dock.pushButtonFlatMap.click)
+        QTimer.singleShot(2500 if not args.flat else 4000, _grab)
 
     def _grab():
         canvas.waitWhileRendering()
         app.processEvents()
         print("canvas layers:", [l.name() for l in canvas.layers()], "extent:", canvas.extent().toString(0),
               "crs:", canvas.mapSettings().destinationCrs().toProj()[:30], "size:", canvas.size().width(), canvas.size().height())
+        print("tree:", [(n.layer().name(), n.itemVisibilityChecked()) for n in project.layerTreeRoot().findLayers()])
         window.grab().save(args.auto)
         print("screenshot:", args.auto)
         app.quit()

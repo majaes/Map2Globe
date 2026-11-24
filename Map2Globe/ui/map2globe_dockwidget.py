@@ -56,6 +56,7 @@ class Map2GlobeDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     def __init__(self, iface, parent=None):
         """Constructor."""
         self.is_initializing = True
+        self.is_building = False
 
         super(Map2GlobeDockWidget, self).__init__(parent)
 
@@ -344,6 +345,13 @@ class Map2GlobeDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.update_buttons_state()
 
     def update_map_globe(self):
+        self.is_building = True
+        try:
+            self._update_map_globe()
+        finally:
+            self.is_building = False
+
+    def _update_map_globe(self):
         self.globe.suspend_auto_crs_setup()
         coordinates = self.calculate_origin_coordinates()
         if coordinates is not None and coordinates != self.old_coordinates:
@@ -362,6 +370,14 @@ class Map2GlobeDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
     @pyqtSlot()
     def on_pushButtonRun_clicked(self):
+        self.is_building = True
+        try:
+            self._build_globe()
+        finally:
+            self.is_building = False
+        self.update_buttons_state()
+
+    def _build_globe(self):
         self.globe.suspend_auto_crs_setup()
         self.globe.remember_flat_state()
         self.load_data_to_globe()
@@ -373,11 +389,13 @@ class Map2GlobeDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.globe.set_group_visibility(True)
         self.add_halo_to_globe()
         self.globe.zoom_to_globe()
-        self.update_buttons_state()
 
     def hide_globe_layers_on_flat_map(self, *args):
+        """Whatever way the map became flat, fit the plugin's layers to it (see Globe.adapt_to_flat_map)."""
+        if self.is_building or self.is_initializing:
+            return
         if not Globe.is_globe_crs(self.qgis_instance.crs()):
-            Globe.hide_globe_shaped_layers()
+            self.globe.adapt_to_flat_map()
 
     def update_buttons_state(self, *args):
         """"Apply changes" and "Switch the map to flat" only make sense while the map shows a globe."""
@@ -387,7 +405,7 @@ class Map2GlobeDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             "" if has_globe else tr(u"Switch the map to a globe first: there is nothing to update yet"))
         self.pushButtonFlatMap.setEnabled(has_globe)
         self.pushButtonFlatMap.setToolTip(
-            tr(u"Switch back to the flat map and keep the plugin's layers (the Halo and Oceans layers are hidden)")
+            tr(u"Switch back to the flat map and keep the plugin's layers (the Halo layer is hidden and the oceans cover the whole world)")
             if has_globe else tr(u"There is no globe in the map"))
 
     def populate_comboBoxProjections(self, *args):

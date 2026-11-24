@@ -94,8 +94,8 @@ FR = {
         "Il n’y a pas encore de globe à mettre à jour : passez d’abord la carte en globe",
     "Switch the map to a globe first: there is nothing to update yet":
         "Passez d’abord la carte en globe : il n’y a encore rien à mettre à jour",
-    "Switch back to the flat map and keep the plugin's layers (the Halo and Oceans layers are hidden)":
-        "Revenir à la carte à plat en gardant les couches du plugin (les couches Halo et Oceans sont masquées)",
+    "Switch back to the flat map and keep the plugin's layers (the Halo layer is hidden and the oceans cover the whole world)":
+        "Revenir à la carte à plat en gardant les couches du plugin (la couche Halo est masquée et les océans couvrent le monde entier)",
     "There is no globe in the map": "Il n’y a pas de globe dans la carte",
     "Traceback": "Détail de l'erreur",
 }

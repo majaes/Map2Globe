@@ -25,16 +25,16 @@ import os
 
 from qgis.PyQt.QtCore import QTimer
 from qgis.core import (QgsApplication, QgsProject, QgsCoordinateReferenceSystem, Qgis, QgsRasterLayer, QgsVectorLayer,
-                       QgsMapSettings, QgsRectangle)
+                       QgsMapSettings, QgsRectangle, QgsFeature, QgsGeometry, QgsPointXY, QgsFillSymbol)
 
 from .graticules import Graticules
 from .halo import Halo
-from .utils.utils import crs_from_proj, local_data_copy
+from .utils.utils import crs_from_proj, local_data_copy, persist_layer
 from ..definitions.language import TrAttr, all_names
 from ..definitions.projections import Projections
 from ..definitions.settings import (LayerConnectionType, S2CLOUDLESS_WMTS_URL, LOCAL_DATA_DIR,
                                     DEFAULT_LAYER_CONNECTION_TYPE, NATURAL_EARTH_BASE_URL,
-                                    DEFAULT_ORIGIN,
+                                    DEFAULT_ORIGIN, DEFAULT_HALO_FILL_COLOR,
                                     WGS84)
 from ..qgis_plugin_tools.tools.custom_logging import bar_msg
 from ..qgis_plugin_tools.tools.i18n import tr
@@ -262,26 +262,74 @@ class Globe:
         return None if rect.isEmpty() else rect
 
     @staticmethod
-    def hide_globe_shaped_layers():
-        """Hide the Halo and Oceans layers (discs built for the globe's projection, deformed on a flat map)."""
+    def hide_halo_layers():
+        """Hide the Halo layers: a disc built for the globe's projection is deformed on a flat map."""
         group = Globe.find_group()
         if group is None:
             return
-        globe_shaped = all_names(u'Halo') | all_names(u'Oceans')
+        halo_names = all_names(u'Halo')
         for node in group.findLayers():
-            if node.layer() is not None and node.layer().name() in globe_shaped and node.itemVisibilityChecked():
+            if node.layer() is not None and node.layer().name() in halo_names and node.itemVisibilityChecked():
                 node.setItemVisibilityChecked(False)
+
+    @staticmethod
+    def _is_flat_oceans(layer):
+        return layer.crs().authid() == "EPSG:4326"
+
+    def flatten_oceans(self):
+        """Replace the globe's Oceans disc by the oceans of a flat map: a rectangle covering the whole world.
+
+        The disc is only right in the globe's projection; elsewhere it is a deformed shape (a triangle,
+        a part of the world...). The new layer keeps the colour of the disc and is drawn under the others.
+        """
+        group = Globe.find_group()
+        if group is None:
+            return
+        names = all_names(u'Oceans')
+        discs = [node.layer() for node in group.findLayers()
+                 if node.layer() is not None and node.layer().name() in names
+                 and not Globe._is_flat_oceans(node.layer())]
+        if not discs:
+            return
+        color = DEFAULT_HALO_FILL_COLOR
+        try:
+            color = discs[0].renderer().symbol().color()
+        except Exception:  # unusual renderer: keep the default colour
+            LOGGER.debug("Could not read the oceans colour", exc_info=True)
+
+        # Mercator-like projections can't show the poles
+        max_lat = 90 if self.qgis_instance.crs().isGeographic() else 85
+        coords = ([(x, -max_lat) for x in range(-180, 181, 2)] + [(180, y) for y in range(-max_lat, max_lat + 1, 2)]
+                  + [(x, max_lat) for x in range(180, -181, -2)] + [(-180, y) for y in range(max_lat, -max_lat - 1, -2)])
+        layer = QgsVectorLayer("Polygon?crs=EPSG:4326", tr(u'Oceans'), "memory")
+        feature = QgsFeature()
+        feature.setGeometry(QgsGeometry.fromPolygonXY([[QgsPointXY(x, y) for x, y in coords]]))
+        layer.dataProvider().addFeatures([feature])
+        layer = persist_layer(layer, 'oceans_flat', tr(u'Oceans'))
+        symbol = QgsFillSymbol.createSimple({'color': color.name(), 'outline_style': 'no'})
+        symbol.setColor(color)
+        layer.renderer().setSymbol(symbol)
+
+        for disc in discs:
+            self.qgis_instance.removeMapLayer(disc.id())
+        self.qgis_instance.addMapLayer(layer, False)
+        group.insertLayer(len(group.children()), layer)
+
+    def adapt_to_flat_map(self):
+        """Make the plugin's layers fit a flat map: no Halo, oceans covering the world."""
+        Globe.hide_halo_layers()
+        self.flatten_oceans()
 
     def show_flat_map(self):
         """Switch from the globe back to the flat map, keeping the plugin's layers.
 
-        The project gets its flat projection and view back. The Halo and Oceans layers are discs built for
-        the globe's projection and look wrong on a flat map, so they are hidden (not deleted); the other
-        layers (countries, graticules...) stay visible. Building the globe again makes everything visible.
+        The project gets its flat projection and view back. The Halo disc is built for the globe's projection and
+        looks wrong on a flat map, so it is hidden (not deleted), and the Oceans disc is replaced by oceans
+        covering the whole world; the other layers (countries, graticules...) stay visible. Building the
+        globe again rebuilds the halo and the oceans.
         """
-        Globe.hide_globe_shaped_layers()
-
         self.qgis_instance.setCrs(self._remembered_crs())
+        self.adapt_to_flat_map()
         canvas = self.iface.mapCanvas()
         rect = self._remembered_extent()
         if rect is not None:
