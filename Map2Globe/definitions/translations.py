@@ -58,6 +58,7 @@ FR = {
     "Switch the map to a globe": "Passer la carte en globe",
     "Switch the map to flat": "Passer la carte à plat",
     # --- Attributions ---
+    "Inspired by the GlobeBuilder plugin by Gispo Ltd. (GPL).": "Inspiré du plugin GlobeBuilder de Gispo Ltd. (GPL).",
     'The free vector and raster map data used come from the '
     '<a href="https://wiki.openstreetmap.org/wiki/Nominatim">OpenStreetMap Nominatim</a> geocoding API '
     'and from <a href="https://www.naturalearthdata.com">naturalearthdata.com</a>.':

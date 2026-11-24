@@ -1,5 +1,5 @@
-#  Copyright (C) 2020-2021 GlobeBuilder contributors.
 #  Copyright (C) 2026 ANABA MANGA.
+#  Copyright (C) 2020-2021 GlobeBuilder contributors.
 #
 #
 #  This file is part of Map2Globe.

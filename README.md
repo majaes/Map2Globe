@@ -3,6 +3,8 @@ Map2Globe
 
 **Location and situation maps made easy: switch your QGIS map to a globe and back to a flat map with one click.**
 
+*A plugin created, designed and maintained by [ANABA MANGA](https://anbmng.com).*
+
 Map2Globe is designed first of all to make **location maps and situation maps** (locator maps): it shows where a
 country, a region or a place is on the globe. It builds a globe (azimuthal orthographic projection, "the world from space") from the countries of Natural
 Earth and turns the map of your QGIS project into that globe. You can switch back to the flat map at any time, the
@@ -87,7 +89,9 @@ workspace.
 
 ## Credits and licence
 
-Created by [ANABA MANGA](https://anbmng.com). Based on the GlobeBuilder plugin by Gispo Ltd. and its contributors.
+**Map2Globe is an original work by [ANABA MANGA](https://anbmng.com)**: concept, design, interface, features and development. Copyright (C) 2026 ANABA MANGA.
+
+It was inspired by the GlobeBuilder plugin by Gispo Ltd., released under the GPL; the copyright notices of that project are kept in the source files, as the licence requires.
 
 Map2Globe is free software released under the GNU General Public License, version 2 or (at your option) any later
 version, see [LICENSE](LICENSE).

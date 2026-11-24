@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 
-#  Copyright (C) 2020-2021 GlobeBuilder contributors.
 #  Copyright (C) 2026 ANABA MANGA.
+#  Copyright (C) 2020-2021 GlobeBuilder contributors.
 #
 #
 #  This file is part of Map2Globe.
@@ -211,7 +211,8 @@ class Map2GlobeDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         u'The free vector and raster map data used come from the '
         u'<a href="https://wiki.openstreetmap.org/wiki/Nominatim">OpenStreetMap Nominatim</a> geocoding API '
         u'and from <a href="https://www.naturalearthdata.com">naturalearthdata.com</a>.')
-    AUTHOR_CREDIT = u'<a href="https://anbmng.com">By ANABA MANGA</a>'
+    AUTHOR_CREDIT = u'<b>Map2Globe</b> &copy; 2026 <a href="https://anbmng.com">ANABA MANGA</a>'
+    INSPIRED_BY = u'Inspired by the GlobeBuilder plugin by Gispo Ltd. (GPL).'
     ATTRIBUTION_S2 = (
         u'Sentinel-2 cloudless data from <a href="https://s2maps.eu/">s2maps.eu</a> by EOX IT Services GmbH '
         u'(contains modified Copernicus Sentinel data 2017 &amp; 2018), licensed under '
@@ -220,8 +221,8 @@ class Map2GlobeDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         u'<a href="https://cloudless.eox.at">cloudless.eox.at</a>.')
 
     def update_attributions(self):
-        """The credits: data sources, the Sentinel-2 licence reminder (CC BY-NC-SA) and the author."""
-        parts = [tr(self.ATTRIBUTION_DATA), tr(self.ATTRIBUTION_S2), self.AUTHOR_CREDIT]
+        """The credits: the author first, the inspiration, data sources and the Sentinel-2 licence reminder (CC BY-NC-SA)."""
+        parts = [self.AUTHOR_CREDIT, tr(self.INSPIRED_BY), tr(self.ATTRIBUTION_DATA), tr(self.ATTRIBUTION_S2)]
         self.label_5.setText("<p>" + "</p><p>".join(parts) + "</p>")
 
     def setup_name_search(self):

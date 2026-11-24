@@ -2,7 +2,7 @@
 
 ## 1.0.0 - 2026-11-24
 
-First release of **Map2Globe**, by ANABA MANGA, made first of all for **location and situation maps**. It is based on the GlobeBuilder plugin by Gispo Ltd. (GPL), rebuilt
+First release of **Map2Globe**, an original plugin by ANABA MANGA, made first of all for **location and situation maps**. It was inspired by the GlobeBuilder plugin by Gispo Ltd. (GPL), rebuilt
 and extended for QGIS 4.
 
 * **Switch the map to a globe** (azimuthal orthographic projection) and **switch it back to flat** with one click. The
