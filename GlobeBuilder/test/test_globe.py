@@ -51,7 +51,7 @@ def test_projection_change_with_custom_origin(globe):
 def test_loading_countries(globe, qgis_iface, qgis_canvas):
     """Test loading data"""
     assert len(qgis_iface.getMockLayers()) == 0
-    globe.load_data(False, True, False, QColor(Qt.GlobalColor.blue), QColor(Qt.GlobalColor.blue), None, '50m', 10)
+    globe.load_data(False, True, False, QColor(Qt.GlobalColor.blue), QColor(Qt.GlobalColor.blue), '50m', 10)
     names = get_existing_layer_names(qgis_iface, qgis_canvas)
     assert "Countries" in names
 
@@ -60,7 +60,7 @@ def test_loading_countries(globe, qgis_iface, qgis_canvas):
 def test_loading_graticules(globe, qgis_iface, qgis_canvas):
     """Test loading data"""
     assert len(qgis_iface.getMockLayers()) == 0
-    globe.load_data(False, False, True, QColor(Qt.GlobalColor.blue), QColor(Qt.GlobalColor.blue), None, '50m', 10)
+    globe.load_data(False, False, True, QColor(Qt.GlobalColor.blue), QColor(Qt.GlobalColor.blue), '50m', 10)
     names = get_existing_layer_names(qgis_iface, qgis_canvas)
     assert "Graticules" in names
 
@@ -68,7 +68,7 @@ def test_loading_graticules(globe, qgis_iface, qgis_canvas):
 def test_loading_s2cloudless(globe, qgis_iface, qgis_canvas):
     """Test loading data"""
     assert len(qgis_iface.getMockLayers()) == 0
-    globe.load_data(True, False, False, QColor(Qt.GlobalColor.blue), QColor(Qt.GlobalColor.blue), None, '50m', 10)
+    globe.load_data(True, False, False, QColor(Qt.GlobalColor.blue), QColor(Qt.GlobalColor.blue), '50m', 10)
     names = get_existing_layer_names(qgis_iface, qgis_canvas)
     assert "S2 Cloudless 2018" in names
 
@@ -77,7 +77,7 @@ def test_loading_s2cloudless_countries_and_graticules(globe, qgis_iface, qgis_ca
     """Test loading data"""
     assert len(qgis_iface.getMockLayers()) == 0
     try:
-        globe.load_data(True, True, True, QColor(Qt.GlobalColor.blue), QColor(Qt.GlobalColor.blue), None, '50m', 10)
+        globe.load_data(True, True, True, QColor(Qt.GlobalColor.blue), QColor(Qt.GlobalColor.blue), '50m', 10)
         names = get_existing_layer_names(qgis_iface, qgis_canvas)
         expected_names = {"Graticules", "S2 Cloudless 2018", "Countries"}
         assert names == expected_names
@@ -170,7 +170,7 @@ def test_adding_oceans_keeps_the_canvas_color(globe, qgis_canvas):
 
 def test_default_colors():
     assert DEFAULT_COUNTRIES_COLOR.name() == '#ffe9a8'
-    assert DEFAULT_HALO_COLOR.name() == '#a0a0a4'
+    assert DEFAULT_HALO_COLOR.name() == '#ffffff'
     assert DEFAULT_HALO_FILL_COLOR.name() == '#a6cee3'
 
 

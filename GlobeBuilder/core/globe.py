@@ -28,7 +28,7 @@ from qgis.core import (QgsProject, QgsCoordinateReferenceSystem, Qgis, QgsRaster
 
 from .graticules import Graticules
 from .halo import Halo
-from .utils.utils import set_selection_based_style, get_feature_ids_that_intersect_bbox, local_data_copy
+from .utils.utils import local_data_copy
 from ..definitions.projections import Projections
 from ..definitions.settings import (LayerConnectionType, S2CLOUDLESS_WMTS_URL, LOCAL_DATA_DIR,
                                     DEFAULT_LAYER_CONNECTION_TYPE, NATURAL_EARTH_BASE_URL,
@@ -64,7 +64,11 @@ class Globe:
 
     # Layer names the plugin itself creates and is therefore safe to delete/recreate.
     # Layers manually added to the group by the user (e.g. their own basemap) are left untouched.
-    MANAGED_LAYER_NAMES = {Halo.LAYER_NAME, Halo.OCEANS_LAYER_NAME, Graticules.LAYER_NAME, tr(u'Countries'), tr(u'S2 Cloudless 2018')}
+    @staticmethod
+    def managed_layer_names():
+        """Names of the layers built by the plugin: in the current language and in English (older projects)."""
+        english = {u'Halo', u'Oceans', u'Graticules', u'Countries', u'S2 Cloudless 2018'}
+        return english | {tr(name) for name in english}
 
     # How long QGIS' "set CRS from the first layer" step is kept off after building the globe (ms).
     # That step runs deferred, i.e. after the code building the globe has returned.
@@ -111,8 +115,9 @@ class Globe:
         group = Globe.find_group()
         if group is None:
             return False
+        managed = Globe.managed_layer_names()
         nodes = [node for node in group.findLayers()
-                 if node.layer() is not None and node.layer().name() in Globe.MANAGED_LAYER_NAMES]
+                 if node.layer() is not None and node.layer().name() in managed]
         return bool(nodes) and group.itemVisibilityChecked() and any(n.itemVisibilityChecked() for n in nodes)
 
     def set_origin(self, coordinates):
@@ -126,7 +131,7 @@ class Globe:
         self.group.setItemVisibilityCheckedRecursive(is_visible)
 
     def load_data(self, load_s2, load_countries, load_graticules, countries_color, graticules_color,
-                  intersecting_countries_color, counties_res, graticules_res, view_extent=None, view_crs=None):
+                  counties_res, graticules_res):
         existing_layer_names = self.get_existing_layer_names()
         s2_cloudless_layer_name = tr(u'S2 Cloudless 2018')
         if load_s2 and s2_cloudless_layer_name not in existing_layer_names:
@@ -139,14 +144,7 @@ class Globe:
         ne_data = {}
         if load_countries:
             def style_countries(layer):
-                if intersecting_countries_color is None:
-                    layer.renderer().symbol().setColor(countries_color)
-                else:
-                    set_selection_based_style(layer, intersecting_countries_color, countries_color)
-                    extent = view_extent if view_extent is not None else self.iface.mapCanvas().extent()
-                    crs = view_crs if view_crs is not None else self.qgis_instance.crs()
-                    ids = get_feature_ids_that_intersect_bbox(layer, extent, crs)
-                    layer.select(ids)
+                layer.renderer().symbol().setColor(countries_color)
 
             ne_data[tr(u'Countries')] = (
                 'ne_{}_admin_0_countries.geojson'.format(counties_res), lambda l: style_countries(l))
@@ -182,8 +180,12 @@ class Globe:
             if connection_type == LayerConnectionType.local:
                 # Don't let layers lock files inside the plugin folder (breaks upgrades on Windows)
                 source_path = local_data_copy(source_path)
-            existing = self.qgis_instance.mapLayersByName(name)
+            # A layer made by an older version / in another language may still carry the English name
+            english_name = {tr(u'Countries'): u'Countries'}.get(name, name)
+            existing = self.qgis_instance.mapLayersByName(name) or self.qgis_instance.mapLayersByName(english_name)
             layer = existing[0] if existing else None
+            if layer is not None and layer.name() != name:
+                layer.setName(name)
 
             # Reload if the layer doesn't exist yet, or its source (e.g. resolution) changed
             if layer is None or os.path.normpath(layer.source()) != os.path.normpath(source_path):
@@ -204,6 +206,18 @@ class Globe:
             if styling_method is not None and layer is not None:
                 styling_method(layer)
                 layer.triggerRepaint()
+                self.refresh_legend(layer)
+
+    def refresh_legend(self, layer):
+        """Update the layer's symbol in the Layers panel.
+
+        The panel keeps the symbol QGIS gave the layer when it was added (a random colour); changing the
+        renderer's colour afterwards doesn't update it, hence the countries icon not matching the map.
+        """
+        get_view = getattr(self.iface, "layerTreeView", None)
+        view = get_view() if get_view is not None else None
+        if view is not None:
+            view.refreshLayerSymbology(layer.id())
 
     def insert_layer_to_group(self, layer, index=0):
         self.qgis_instance.addMapLayer(layer, False)

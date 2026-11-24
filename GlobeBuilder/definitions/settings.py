@@ -56,10 +56,9 @@ WGS84 = _crs
 DEFAULT_BACKGROUND_COLOR = QColor(Qt.GlobalColor.black)
 DEFAULT_COUNTRIES_COLOR = QColor('#ffe9a8')
 DEFAULT_GRATICULES_COLOR = QColor(Qt.GlobalColor.gray)
-DEFAULT_HALO_COLOR = QColor('#a0a0a4')
+DEFAULT_HALO_COLOR = QColor('#ffffff')
 DEFAULT_HALO_LAYOUT_COLOR = QColor(Qt.GlobalColor.black)
 DEFAULT_HALO_FILL_COLOR = QColor('#a6cee3')
-DEFAULT_INTERSECTING_COUNTRIES_COLOR = QColor(Qt.GlobalColor.red)
 _transparent = QColor(Qt.GlobalColor.black)
 _transparent.setAlpha(0)
 TRANSPARENT_COLOR = _transparent

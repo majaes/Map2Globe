@@ -21,10 +21,10 @@ parser.add_argument("--fr", action="store_true")
 parser.add_argument("--auto", metavar="FILE")
 args = parser.parse_args()
 
-from qgis.core import QgsApplication, QgsCoordinateReferenceSystem, QgsProject
-from qgis.gui import QgsMapCanvas, QgsLayerTreeMapCanvasBridge, QgsMessageBar
+from qgis.core import QgsApplication, QgsCoordinateReferenceSystem, QgsLayerTreeModel, QgsProject
+from qgis.gui import QgsLayerTreeView, QgsMapCanvas, QgsLayerTreeMapCanvasBridge, QgsMessageBar
 from qgis.PyQt.QtCore import Qt, QTimer, QCoreApplication
-from qgis.PyQt.QtWidgets import QMainWindow
+from qgis.PyQt.QtWidgets import QDockWidget, QMainWindow
 
 app = QgsApplication([], True)
 app.initQgis()
@@ -80,7 +80,17 @@ project.setCrs(QgsCoordinateReferenceSystem('EPSG:4326'))  # what a new QGIS pro
 # QGIS keeps the canvas CRS in sync with the project CRS; the bridge doesn't do that part.
 project.crsChanged.connect(lambda: canvas.setDestinationCrs(project.crs()))
 
+# A real Layers panel, like QGIS': shows the layer symbols and the 'temporary layer' indicator
+layer_model = QgsLayerTreeModel(project.layerTreeRoot())
+layer_model.setFlag(QgsLayerTreeModel.ShowLegend)
+layer_view = QgsLayerTreeView()
+layer_view.setModel(layer_model)
+layers_dock = QDockWidget('Layers')
+layers_dock.setWidget(layer_view)
+window.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, layers_dock)
+
 iface = FakeIface(window, canvas, bar, bridge)
+iface.layerTreeView = lambda: layer_view
 dock = GlobeBuilderDockWidget(iface)
 window.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock)
 window.resizeDocks([dock], [540], Qt.Orientation.Horizontal)

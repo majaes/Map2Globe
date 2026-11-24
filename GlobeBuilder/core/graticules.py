@@ -20,6 +20,7 @@ from qgis.PyQt.QtGui import QColor
 from qgis.core import (QgsProcessingFeedback, QgsVectorLayer, QgsFillSymbol,
                        QgsSymbolLayer, QgsFeatureRenderer)
 
+from .utils.utils import persist_layer
 from ..definitions.settings import WGS84
 from ..qgis_plugin_tools.tools.i18n import tr
 
@@ -41,6 +42,8 @@ class Graticules:
     def create_graticules(self, stroke_color):
         tmp_grid_layer = self._create_grid_layer()
         layer = self._create_graticule_layer(tmp_grid_layer)
+        # Save it like the countries (no more "temporary scratch layer")
+        layer = persist_layer(layer, 'graticules', self.LAYER_NAME)
         self._set_styles(layer, stroke_color)
         return layer
 

@@ -24,7 +24,7 @@ import os
 
 from qgis.PyQt.QtCore import Qt, pyqtSignal, pyqtSlot
 from qgis.PyQt import QtWidgets
-from qgis.PyQt.QtWidgets import QComboBox, QCompleter, QLabel
+from qgis.PyQt.QtWidgets import QComboBox, QCompleter
 from qgis.core import Qgis, QgsProject
 
 from ..core.globe import Globe
@@ -36,7 +36,7 @@ from ..definitions.settings import (LOCAL_DATA_DIR, DEFAULT_MAX_NUMBER_OF_RESULT
                                     DEFAULT_USE_NE_GRATICULES, DEFAULT_USE_S2_CLOUDLESS, DEFAULT_ORIGIN,
                                     DEFAULT_BACKGROUND_COLOR, DEFAULT_HALO_COLOR, DEFAULT_HALO_FILL_COLOR,
                                     DEFAULT_COUNTRIES_COLOR,
-                                    DEFAULT_GRATICULES_COLOR, DEFAULT_INTERSECTING_COUNTRIES_COLOR)
+                                    DEFAULT_GRATICULES_COLOR)
 from ..qgis_plugin_tools.tools.custom_logging import bar_msg
 from ..qgis_plugin_tools.tools.i18n import tr
 from ..qgis_plugin_tools.tools.resources import load_ui, plugin_name
@@ -87,7 +87,6 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.on_radioButtonHFill_toggled(self.radioButtonHFill.isChecked())
         self.on_radioButtonHFillWithHalo_toggled(self.radioButtonHFillWithHalo.isChecked())
         self.on_radioButtonHNone_toggled(self.radioButtonHNone.isChecked())
-        self.on_checkBoxIntCountries_stateChanged()
 
         self.populate_comboBoxProjections()
         self.update_attributions()
@@ -96,7 +95,6 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.mColorButtonHFill.setColor(DEFAULT_HALO_FILL_COLOR)
         self.mColorButtonCountries.setColor(DEFAULT_COUNTRIES_COLOR)
         self.mColorButtonGraticules.setColor(DEFAULT_GRATICULES_COLOR)
-        self.mColorButtonIntCountries.setColor(DEFAULT_INTERSECTING_COUNTRIES_COLOR)
 
         self.geolocations = {}
         self.old_coordinates = DEFAULT_ORIGIN
@@ -127,13 +125,6 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.horizontalLayout_9.removeWidget(self.checkBoxS2cloudless)
         self.verticalLayout_6.addWidget(self.checkBoxS2cloudless)
 
-        # A QCheckBox can't wrap its text: show the (long) text in a wrapping label instead.
-        check = self.checkBoxIntCountries
-        text_label = QLabel(check.text())
-        text_label.setWordWrap(True)
-        text_label.mouseReleaseEvent = lambda _event: check.toggle() if check.isEnabled() else None
-        check.setText("")
-        self.horizontalLayout_15.insertWidget(1, text_label, 1)
         self.label_5.setWordWrap(True)
         self.label_5.setOpenExternalLinks(True)
         self.groupBox_6.setCollapsed(True)
@@ -232,10 +223,6 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         set_setting("useS2cloudless", self.checkBoxS2cloudless.isChecked())
         self.update_attributions()
 
-    def on_checkBoxIntCountries_stateChanged(self):
-        set_setting("intCountries", self.checkBoxIntCountries.isChecked())
-        self.mColorButtonIntCountries.setEnabled(self.checkBoxIntCountries.isChecked())
-
     @pyqtSlot()
     def on_pushButtonSearch_clicked(self):
         text = self.lineEditGeocoding.text()
@@ -258,11 +245,6 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
     def update_map_globe(self):
         self.globe.suspend_auto_crs_setup()
-        # Capture the view before any CRS switch below: the canvas extent isn't
-        # guaranteed to be recalculated in the new CRS right away, which could
-        # otherwise make the "intersecting current view" selection wrong.
-        view_extent = self.iface.mapCanvas().extent()
-        view_crs = self.qgis_instance.crs()
         coordinates = self.calculate_origin_coordinates()
         if coordinates is not None and coordinates != self.old_coordinates:
             self.old_coordinates = coordinates
@@ -272,7 +254,7 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.globe.set_projection(projection)
         # Load the data first and set the globe projection afterwards: QGIS resets the project CRS to the
         # one of the first layer added, which would otherwise undo the projection (flat world map).
-        self.load_data_to_globe(view_extent=view_extent, view_crs=view_crs)
+        self.load_data_to_globe()
         self.globe.change_project_projection()
         self.globe.set_group_visibility(True)
         self.add_halo_to_globe()
@@ -281,7 +263,7 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     @pyqtSlot()
     def on_pushButtonRun_clicked(self):
         self.globe.suspend_auto_crs_setup()
-        self.load_data_to_globe(False)
+        self.load_data_to_globe()
         self.old_coordinates = self.calculate_origin_coordinates()
         self.globe.set_origin(self.old_coordinates)
         self.old_projection = Projections.proj_from_id(self.comboBoxProjections.currentText())
@@ -320,9 +302,6 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         return self.mColorButtonHFill.color() if (
             self.radioButtonHFill.isChecked() or self.radioButtonHFillWithHalo.isChecked()) else None
 
-    def get_intersecting_countries_color(self):
-        return self.mColorButtonIntCountries.color() if self.checkBoxIntCountries.isChecked() else None
-
     def show_warning(self, message):
         self.iface.messageBar().pushMessage(plugin_name(), message, level=Qgis.Warning, duration=8)
 
@@ -336,15 +315,12 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
             # Preselect the best match so "Apply changes" works right away
             self.listWidgetGeocodingResults.setCurrentRow(0)
 
-    def load_data_to_globe(self, possibly_use_intersecting_colors=True, view_extent=None, view_crs=None):
+    def load_data_to_globe(self):
         self.globe.load_data(self.checkBoxS2cloudless.isChecked(), self.checkBoxCountries.isChecked(),
                              self.checkBoxGraticules.isChecked(), self.mColorButtonCountries.color(),
                              self.mColorButtonGraticules.color(),
-                             self.get_intersecting_countries_color() if possibly_use_intersecting_colors else None,
                              self.comboBoxCountries.currentText().strip(),
-                             self.comboBoxGraticules.currentText().rstrip("°").strip(),
-                             view_extent if view_extent is not None else self.iface.mapCanvas().extent(),
-                             view_crs if view_crs is not None else self.qgis_instance.crs())
+                             self.comboBoxGraticules.currentText().rstrip("°").strip())
 
     def get_geocoded_coordinates(self):
         coordinates = None

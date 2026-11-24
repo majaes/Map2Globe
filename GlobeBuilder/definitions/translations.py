@@ -5,7 +5,7 @@ Qt's ``lrelease`` is not always available to contributors, so translations are p
 Python dictionaries served through a ``QTranslator`` subclass. This works for strings coming from the
 ``.ui`` file as well as for ``tr()`` calls, and needs no compilation step.
 
-Strings used as layer/group names (``Globe``, ``Countries``, ``Halo``, ``Graticules``,
+Strings used as layer/group names (``Globe``, ``Halo``, ``Graticules``,
 ``S2 Cloudless 2018``) are intentionally *not* translated: they are used as identifiers to find the
 plugin's own layers in the project.
 """
@@ -17,7 +17,6 @@ FR = {
     "Data sources (optional)": "Sources de données (facultatif)",
     "Center the Globe based on:": "Centrer le globe sur :",
     "Visualization": "Visualisation",
-    "Options": "Options",
     # --- UI: sources de données ---
     "Countries": "Pays",
     "Graticules": "Graticules",
@@ -25,7 +24,7 @@ FR = {
     # --- UI: centrage ---
     "Coordinates": "Coordonnées",
     "'Longitude, Latitude' in decimal degrees": "« Longitude, Latitude » en degrés décimaux",
-    "Center to the current view": "Centrer sur la vue actuelle",
+    "Current view": "Vue actuelle",
     "Country": "Pays",
     "Type to search a country name": "Tapez pour rechercher un nom de pays",
     "Choose a name from the list": "Choisissez un nom dans la liste",
@@ -46,7 +45,6 @@ FR = {
     "Outline, with oceans": "Contour, avec océans",
     "None": "Aucun",
     # --- UI: mise en page ---
-    "Color for Countries intersecting the current view": "Couleur des pays croisant la vue actuelle",
     "Apply changes": "Appliquer les modifications",
     "Add the Globe to a Map": "Ajouter le globe à la carte",
     # --- Attributions ---
@@ -77,8 +75,6 @@ FR = {
     "Hammer & Eckert-Greifendorff": "Hammer et Eckert-Greifendorff",
     # --- Menus et messages ---
     "Build Globe view": "Construire la vue globe",
-    "Selected": "Sélectionné",
-    "Not Selected": "Non sélectionné",
     "Could not add Sentinel 2 Cloudless layer": "Impossible d'ajouter la couche Sentinel-2 sans nuages",
     "Could not add graticules": "Impossible d'ajouter les graticules",
     "Could not load Natural Earth layer '{}'": "Impossible de charger la couche Natural Earth « {} »",
@@ -104,7 +100,7 @@ TRANSLATIONS = {"fr": FR}
 # Identifiers that go through tr() with the default context (layer names) must stay as is,
 # even though the same words are translated when they come from the .ui file.
 IDENTIFIER_CONTEXT = "@default"
-IDENTIFIERS = {"Countries", "Graticules", "Halo", "Oceans", "Globe", "S2 Cloudless 2018"}
+IDENTIFIERS = {"Graticules", "Halo", "Oceans", "Globe", "S2 Cloudless 2018"}
 
 
 class DictTranslator(QTranslator):

@@ -23,6 +23,7 @@ from qgis.core import (QgsFillSymbol, QgsEffectStack, QgsDropShadowEffect, QgsIn
                        QgsCoordinateTransform, QgsProject)
 from qgis.gui import QgisInterface
 
+from .utils.utils import persist_layer
 from ..definitions.projections import Projections
 from ..definitions.settings import (TRANSPARENT_COLOR, HaloDrawMethod, EARTH_RADIUS, DEFAULT_HALO_DRAW_METHOD,
                                     DEFAULT_NUMBER_OF_SEGMENTS, WGS84)
@@ -74,6 +75,9 @@ class Halo:
         layer.startEditing()
         provider.addFeatures([feature])
         layer.commitChanges()
+
+        # Save it like the countries (no more "temporary scratch layer"), then style the saved layer
+        layer = persist_layer(layer, 'oceans' if fill_color is not None else 'halo', name)
 
         # Assign styles and to map (but not toc yet)
         self.set_halo_styles(layer, draw_method, stroke_color, use_effects, fill_color)

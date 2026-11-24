@@ -22,13 +22,60 @@
 import os
 import shutil
 import tempfile
+import uuid
 
-from qgis.core import QgsApplication, QgsFillSymbol, QgsRuleBasedRenderer, QgsFeatureRequest, \
-    QgsCoordinateTransformContext, QgsCoordinateTransform, QgsGeometry, QgsProject, QgsRectangle, \
-    QgsVectorLayer, QgsWkbTypes
+from qgis.core import (QgsApplication, QgsCoordinateTransform, QgsGeometry, QgsProject, QgsRectangle,
+                       QgsVectorFileWriter, QgsVectorLayer, QgsWkbTypes)
 
 from ...definitions.settings import WGS84
-from ...qgis_plugin_tools.tools.i18n import tr
+
+
+def data_dir():
+    """Folder (in the QGIS profile, outside the plugin folder) where the plugin keeps the data files of its layers."""
+    try:
+        root = os.path.join(QgsApplication.qgisSettingsDirPath(), "GlobeBuilder_data")
+    except Exception:
+        root = os.path.join(tempfile.gettempdir(), "GlobeBuilder_data")
+    os.makedirs(root, exist_ok=True)
+    return root
+
+
+def _no_error(error):
+    try:
+        return error == QgsVectorFileWriter.NoError
+    except AttributeError:  # Qt6 / QGIS 4 scoped enum
+        return error == QgsVectorFileWriter.WriterError.NoError
+
+
+def persist_layer(layer, file_stem, name=None):
+    """Save a temporary (memory) vector layer as a GeoPackage in the plugin data folder, like the countries.
+
+    Returns the layer loaded back from that file, so it is no longer a "temporary scratch layer" and survives
+    saving/reopening the QGIS project. If anything goes wrong the original layer is returned unchanged.
+    The file is replaced by the next build; if it is still locked (Windows) a new file name is used.
+    """
+    name = name or layer.name()
+    try:
+        path = os.path.join(data_dir(), file_stem + ".gpkg")
+        try:
+            for suffix in ("", "-wal", "-shm"):
+                if os.path.exists(path + suffix):
+                    os.remove(path + suffix)
+        except OSError:
+            path = os.path.join(data_dir(), "{}_{}.gpkg".format(file_stem, uuid.uuid4().hex[:8]))
+
+        options = QgsVectorFileWriter.SaveVectorOptions()
+        options.driverName = "GPKG"
+        options.layerName = file_stem
+        options.fileEncoding = "UTF-8"
+        result = QgsVectorFileWriter.writeAsVectorFormatV3(layer, path, QgsProject.instance().transformContext(),
+                                                           options)
+        if not _no_error(result[0]):
+            return layer
+        saved = QgsVectorLayer("{}|layername={}".format(path, file_stem), name, "ogr")
+        return saved if saved.isValid() else layer
+    except Exception:  # never let a saving problem prevent the globe from being built
+        return layer
 
 
 def local_data_copy(source_path):
@@ -40,11 +87,7 @@ def local_data_copy(source_path):
     made, the original path is returned so the plugin keeps working.
     """
     try:
-        try:
-            root = os.path.join(QgsApplication.qgisSettingsDirPath(), "GlobeBuilder_data")
-        except Exception:
-            root = os.path.join(tempfile.gettempdir(), "GlobeBuilder_data")
-        os.makedirs(root, exist_ok=True)
+        root = data_dir()
         target = os.path.join(root, os.path.basename(source_path))
         src_stat = os.stat(source_path)
         if (not os.path.exists(target) or os.path.getsize(target) != src_stat.st_size
@@ -55,38 +98,9 @@ def local_data_copy(source_path):
         return source_path
 
 
-def set_selection_based_style(layer, s_color, else_color):
-    # noinspection PyCallByClass,PyArgumentList
-    fill_for_selected = QgsFillSymbol.createSimple({'color': 'blue'})
-    fill_for_selected.setColor(s_color)
-    rule_s = QgsRuleBasedRenderer.Rule(fill_for_selected, label=tr(u"Selected"),
-                                       filterExp="is_selected()")
-
-    fill_for_else = fill_for_selected.clone()
-    fill_for_else.setColor(else_color)
-    rule_else = QgsRuleBasedRenderer.Rule(fill_for_else, label=tr(u"Not Selected"),
-                                          elseRule=True)
-
-    renderer = QgsRuleBasedRenderer(QgsRuleBasedRenderer.Rule(None))
-    root_rule = renderer.rootRule()
-    root_rule.appendChild(rule_s)
-    root_rule.appendChild(rule_else)
-
-    layer.setRenderer(renderer)
-    return layer
-
-
 def transform_to_wgs84(geom, crs, qgis_instance):
     transformer = QgsCoordinateTransform(crs, WGS84, qgis_instance)
     return transformer.transform(geom)
-
-
-def get_feature_ids_that_intersect_bbox(layer, rect, crs):
-    request = (QgsFeatureRequest()
-               .setFilterRect(rect)
-               .setDestinationCrs(crs=crs, context=QgsCoordinateTransformContext())
-               .setNoAttributes().setFlags(QgsFeatureRequest.NoGeometry))
-    return [f.id() for f in layer.getFeatures(request)]
 
 
 def get_map_center_coordinates(iface, qgis_instance, frmt="{:.0f}"):
