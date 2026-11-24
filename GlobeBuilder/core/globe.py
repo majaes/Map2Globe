@@ -29,7 +29,7 @@ from qgis.core import (QgsProject, QgsCoordinateReferenceSystem, Qgis, QgsRaster
 
 from .graticules import Graticules
 from .halo import Halo
-from .utils.utils import set_selection_based_style, get_feature_ids_that_intersect_bbox
+from .utils.utils import set_selection_based_style, get_feature_ids_that_intersect_bbox, local_data_copy
 from ..definitions.projections import Projections
 from ..definitions.settings import (LayerConnectionType, S2CLOUDLESS_WMTS_URL, LOCAL_DATA_DIR,
                                     DEFAULT_LAYER_CONNECTION_TYPE, NATURAL_EARTH_BASE_URL,
@@ -142,6 +142,9 @@ class Globe:
         for name, data in ne_data.items():
             source, styling_method = data
             source_path = os.path.join(root, source)
+            if connection_type == LayerConnectionType.local:
+                # Don't let layers lock files inside the plugin folder (breaks upgrades on Windows)
+                source_path = local_data_copy(source_path)
             existing = self.qgis_instance.mapLayersByName(name)
             layer = existing[0] if existing else None
 
@@ -151,7 +154,7 @@ class Globe:
                     self.qgis_instance.removeMapLayer(layer.id())
                 layer = QgsVectorLayer(source_path, name, "ogr")
                 if not layer.isValid():
-                    layer = QgsVectorLayer(os.path.join(LOCAL_DATA_DIR, source), name, "ogr")
+                    layer = QgsVectorLayer(local_data_copy(os.path.join(LOCAL_DATA_DIR, source)), name, "ogr")
                 if not layer.isValid():
                     self.iface.messageBar().pushMessage(
                         tr(u"Could not load Natural Earth layer '{}'", name),

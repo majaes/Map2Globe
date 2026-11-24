@@ -19,11 +19,39 @@
 #  You should have received a copy of the GNU General Public License
 #  along with GlobeBuilder.  If not, see <https://www.gnu.org/licenses/>.
 
-from qgis.core import QgsPrintLayout, QgsFillSymbol, QgsRuleBasedRenderer, QgsFeatureRequest, \
+import os
+import shutil
+import tempfile
+
+from qgis.core import QgsApplication, QgsPrintLayout, QgsFillSymbol, QgsRuleBasedRenderer, QgsFeatureRequest, \
     QgsCoordinateTransformContext, QgsCoordinateTransform
 
 from ...definitions.settings import WGS84
 from ...qgis_plugin_tools.tools.i18n import tr
+
+
+def local_data_copy(source_path):
+    """Return a copy of a bundled data file stored *outside* the plugin folder.
+
+    Layers read their file for as long as they are in the project. If they read it straight from the
+    plugin folder, Windows locks it and QGIS can no longer uninstall/upgrade the plugin ("Failed to
+    remove directory"). The copy is refreshed whenever the bundled file changes. If the copy can't be
+    made, the original path is returned so the plugin keeps working.
+    """
+    try:
+        try:
+            root = os.path.join(QgsApplication.qgisSettingsDirPath(), "GlobeBuilder_data")
+        except Exception:
+            root = os.path.join(tempfile.gettempdir(), "GlobeBuilder_data")
+        os.makedirs(root, exist_ok=True)
+        target = os.path.join(root, os.path.basename(source_path))
+        src_stat = os.stat(source_path)
+        if (not os.path.exists(target) or os.path.getsize(target) != src_stat.st_size
+                or os.path.getmtime(target) < src_stat.st_mtime):
+            shutil.copy2(source_path, target)
+        return target
+    except OSError:
+        return source_path
 
 
 def create_layout(layout_name, qgis_instance):
