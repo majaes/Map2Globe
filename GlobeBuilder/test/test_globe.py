@@ -33,7 +33,8 @@ def test_projection_change_with_default_origin(globe):
     """Test if projection really changes"""
     globe.set_projection(Projections.AZIMUTHAL_ORTHOGRAPHIC)
     globe.change_project_projection()
-    expeted_proj = Projections.AZIMUTHAL_ORTHOGRAPHIC.value.proj_str(DEFAULT_ORIGIN)
+    expeted_proj = Projections.AZIMUTHAL_ORTHOGRAPHIC.value.proj_str(DEFAULT_ORIGIN).replace(' +type=crs', '')
+    # toProj() never reports the +type=crs marker
     assert QgsProject.instance().crs().toProj() == expeted_proj
 
 
@@ -42,7 +43,7 @@ def test_projection_change_with_custom_origin(globe):
     custom_origin = {'lat': 10, 'lon': 10}
     globe.set_origin(custom_origin)
     globe.change_project_projection()
-    expeted_proj = Projections.AZIMUTHAL_ORTHOGRAPHIC.value.proj_str(custom_origin)
+    expeted_proj = Projections.AZIMUTHAL_ORTHOGRAPHIC.value.proj_str(custom_origin).replace(' +type=crs', '')
     assert QgsProject.instance().crs().toProj() == expeted_proj
 
 
