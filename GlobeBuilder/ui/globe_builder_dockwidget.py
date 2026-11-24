@@ -28,7 +28,8 @@ from qgis.core import Qgis, QgsProject
 
 from ..core.globe import Globe
 from ..core.utils.geocoder import Geocoder
-from ..core.utils.utils import create_layout, transform_to_wgs84, get_map_center_coordinates
+from ..core.utils.utils import (create_layout, transform_to_wgs84, get_map_center_coordinates,
+                                find_layer_with_selection, get_selection_center)
 from ..definitions.projections import Projections
 from ..definitions.settings import (DEFAULT_MAX_NUMBER_OF_RESULTS, DEFAULT_USE_NE_COUNTRIES,
                                     DEFAULT_USE_NE_GRATICULES, DEFAULT_USE_S2_CLOUDLESS, DEFAULT_ORIGIN,
@@ -317,6 +318,9 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     def get_intersecting_countries_color(self):
         return self.mColorButtonIntCountries.color() if self.checkBoxIntCountries.isChecked() else None
 
+    def show_info(self, message):
+        self.iface.messageBar().pushMessage(plugin_name(), message, level=Qgis.Info, duration=4)
+
     def show_warning(self, message):
         self.iface.messageBar().pushMessage(plugin_name(), message, level=Qgis.Warning, duration=8)
 
@@ -351,6 +355,18 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         return coordinates
 
+    def get_selection_coordinates(self):
+        """Centre of the features currently selected in the project (map or attribute table), or None."""
+        active_layer = self.iface.activeLayer() if hasattr(self.iface, "activeLayer") else None
+        layer = find_layer_with_selection(self.qgis_instance, active_layer)
+        if layer is None:
+            return None
+        coordinates = get_selection_center(layer, self.qgis_instance)
+        if coordinates is not None:
+            self.show_info(tr(u"Globe centered on the {} selected feature(s) of '{}'",
+                              layer.selectedFeatureCount(), layer.name()))
+        return coordinates
+
     def calculate_origin_coordinates(self):
         coordinates = None
         try:
@@ -373,7 +389,9 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
                 coordinates = {'lon': center_point.x(), 'lat': center_point.y()}
 
             elif self.radioButtonCenter.isChecked():
-                coordinates = get_map_center_coordinates(self.iface, self.qgis_instance)
+                coordinates = self.get_selection_coordinates()
+                if coordinates is None:
+                    coordinates = get_map_center_coordinates(self.iface, self.qgis_instance)
 
         except ValueError as e:
             LOGGER.warning(tr(u"Error occurred while parsing center of the globe"),

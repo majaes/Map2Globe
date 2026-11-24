@@ -24,7 +24,7 @@ import shutil
 import tempfile
 
 from qgis.core import QgsApplication, QgsPrintLayout, QgsFillSymbol, QgsRuleBasedRenderer, QgsFeatureRequest, \
-    QgsCoordinateTransformContext, QgsCoordinateTransform
+    QgsCoordinateTransformContext, QgsCoordinateTransform, QgsMapLayer, QgsRectangle, QgsWkbTypes
 
 from ...definitions.settings import WGS84
 from ...qgis_plugin_tools.tools.i18n import tr
@@ -107,3 +107,52 @@ def get_map_center_coordinates(iface, qgis_instance, frmt="{:.0f}"):
                                       qgis_instance)
     center = {'lon': float(frmt.format(center_point.x())), 'lat': float(frmt.format(center_point.y()))}
     return center
+
+
+def find_layer_with_selection(project, active_layer=None):
+    """Return the vector layer whose selection should be used: the active layer if it has one,
+    otherwise the first project vector layer with selected features (else None)."""
+    def has_selection(layer):
+        return (layer is not None and layer.type() == QgsMapLayer.VectorLayer
+                and layer.selectedFeatureCount() > 0)
+
+    if has_selection(active_layer):
+        return active_layer
+    for layer in project.mapLayers().values():
+        if has_selection(layer):
+            return layer
+    return None
+
+
+def get_selection_center(layer, project, decimals=4):
+    """Longitude/latitude (WGS84) of the centre of the layer's selected features, or None.
+
+    The centre of the bounding box is used. A selection that wraps around the antimeridian
+    (e.g. USA, Russia, Fiji: bounding box wider than 180 degrees) would otherwise get a centre
+    on the wrong side of the world, so the largest part of the selection is used instead.
+    """
+    geometries = [f.geometry() for f in layer.selectedFeatures() if f.hasGeometry() and not f.geometry().isEmpty()]
+    if not geometries:
+        return None
+
+    transform = None
+    if layer.crs() != WGS84:
+        transform = QgsCoordinateTransform(layer.crs(), WGS84, project)
+    rect = QgsRectangle()
+    rect.setNull()
+    parts = []
+    for geom in geometries:
+        geom = type(geom)(geom)  # copy: never alter the layer's own geometry
+        if transform is not None:
+            geom.transform(transform)
+        rect.combineExtentWith(geom.boundingBox())
+        parts.extend(geom.asGeometryCollection())
+
+    if rect.width() > 180 and parts:
+        polygon_parts = [p for p in parts if QgsWkbTypes.geometryType(p.wkbType()) == QgsWkbTypes.PolygonGeometry]
+        pool = polygon_parts or parts
+        biggest = max(pool, key=lambda p: p.area() if polygon_parts else p.length())
+        rect = biggest.boundingBox()
+
+    center = rect.center()
+    return {'lon': round(center.x(), decimals), 'lat': round(max(-90.0, min(90.0, center.y())), decimals)}
