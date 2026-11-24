@@ -65,7 +65,7 @@ _transparent.setAlpha(0)
 TRANSPARENT_COLOR = _transparent
 
 # UI
-NOMINATIM_URL = "https://nominatim.openstreetmap.org/search/{query}?limit={limit}&format=geojson"
+NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 DEFAULT_MAX_NUMBER_OF_RESULTS = 5
 MAX_NAME_PARTS = 3
 DEFAULT_USE_NE_COUNTRIES = True

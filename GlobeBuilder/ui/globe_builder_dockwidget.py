@@ -24,7 +24,7 @@ import logging
 from qgis.PyQt.QtCore import Qt, pyqtSignal, pyqtSlot
 from qgis.PyQt import QtWidgets
 from qgis.PyQt.QtWidgets import QComboBox, QLabel
-from qgis.core import QgsProject
+from qgis.core import Qgis, QgsProject
 
 from ..core.globe import Globe
 from ..core.utils.geocoder import Geocoder
@@ -68,7 +68,8 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.qgis_instance = QgsProject.instance()
         self.layout_mngr = self.qgis_instance.layoutManager()
         self.globe = Globe(iface)
-        self.geocoder = Geocoder(lambda results: self.on_geocoding_finished(results))
+        self.geocoder = Geocoder(lambda results: self.on_geocoding_finished(results),
+                                 lambda message: self.show_warning(message))
 
         # Set default values
         self.spinBoxMaxResults.setValue(get_setting("maxNumberOfResults", DEFAULT_MAX_NUMBER_OF_RESULTS, int))
@@ -316,9 +317,18 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     def get_intersecting_countries_color(self):
         return self.mColorButtonIntCountries.color() if self.checkBoxIntCountries.isChecked() else None
 
+    def show_warning(self, message):
+        self.iface.messageBar().pushMessage(plugin_name(), message, level=Qgis.Warning, duration=8)
+
     def on_geocoding_finished(self, geolocations):
         self.geolocations = geolocations.copy()
+        if not self.geolocations:
+            self.show_warning(tr(u"No place found for this address"))
+        self.listWidgetGeocodingResults.clear()
         [self.listWidgetGeocodingResults.addItem(name) for name in self.geolocations.keys()]
+        if self.listWidgetGeocodingResults.count() > 0:
+            # Preselect the best match so "Apply changes" works right away
+            self.listWidgetGeocodingResults.setCurrentRow(0)
 
     def load_data_to_globe(self, possibly_use_intersecting_colors=True, view_extent=None, view_crs=None):
         self.globe.load_data(self.checkBoxS2cloudless.isChecked(), self.checkBoxCountries.isChecked(),

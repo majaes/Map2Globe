@@ -91,6 +91,9 @@ FR = {
         "Veuillez sélectionner un élément dans la liste de géolocalisation",
     "Make sure to have at least one layer in the project": "Le projet doit contenir au moins une couche",
     "Error occurred while parsing center of the globe": "Erreur lors de la lecture du centre du globe",
+    "Geocoding failed: {}": "Échec du géocodage : {}",
+    "Geocoding failed: unexpected answer from the server": "Échec du géocodage : réponse inattendue du serveur",
+    "No place found for this address": "Aucun lieu trouvé pour cette adresse",
     "Traceback": "Détail de l'erreur",
 }
 

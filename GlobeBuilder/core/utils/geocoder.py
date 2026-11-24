@@ -22,61 +22,88 @@
 import json
 import logging
 
-from qgis.PyQt.QtCore import QSettings, QUrl
+from qgis.PyQt.QtCore import QUrl, QUrlQuery
 from qgis.PyQt.QtNetwork import QNetworkRequest, QNetworkReply, QNetworkAccessManager
 from qgis.core import Qgis, QgsMessageLog
 
 from ...definitions.settings import NOMINATIM_URL, MAX_NAME_PARTS
+from ...qgis_plugin_tools.tools.i18n import tr
 from ...qgis_plugin_tools.tools.resources import plugin_name
 
 LOGGER = logging.getLogger(plugin_name())
 
+# Qt6 only exposes the scoped form, Qt5 only the flat one.
+try:
+    NO_ERROR = QNetworkReply.NetworkError.NoError
+except AttributeError:  # pragma: no cover
+    NO_ERROR = QNetworkReply.NoError
+
+# Nominatim's usage policy requires an identifying User-Agent (a generic browser one can be blocked).
+USER_AGENT = "GlobeBuilder-QGIS-plugin (+https://github.com/GispoCoding/GlobeBuilder)"
+
 
 class Geocoder:
+    """Nominatim geocoder.
+
+    :param callback: called with a {name: [lon, lat]} dict (possibly empty) when a search succeeds
+    :param error_callback: optional, called with a user readable message when a search fails
+    """
+
     # noinspection PyUnresolvedReferences
-    def __init__(self, callback):
+    def __init__(self, callback, error_callback=None):
         self.network_access_manager = QNetworkAccessManager()
         self.network_access_manager.finished.connect(self.on_search_response)
         self.callback = callback
+        self.error_callback = error_callback
+
+    @staticmethod
+    def build_url(query, max_results):
+        # QUrlQuery takes care of encoding spaces, accents, '&' ... in the user's text
+        url_query = QUrlQuery()
+        url_query.addQueryItem('q', query)
+        url_query.addQueryItem('limit', str(max_results))
+        url_query.addQueryItem('format', 'geojson')
+        url = QUrl(NOMINATIM_URL)
+        url.setQuery(url_query)
+        return url
 
     def geocode(self, query, max_results):
-        params = {
-            'query': query,
-            'limit': max_results
-        }
-        url = NOMINATIM_URL.format(**params)
-
-        # http://osgeo-org.1560.x6.nabble.com/QGIS-Developer-Do-we-have-a-User-Agent-string-for-QGIS-td5360740.html
-        user_agent = QSettings().value("/qgis/networkAndProxy/userAgent", "Mozilla/5.0")
-        user_agent += " " if len(user_agent) else ""
-        # noinspection PyUnresolvedReferences
-        user_agent += "QGIS/{}".format(Qgis.QGIS_VERSION_INT)
-        user_agent += " GlobeBuilder-plugin"
-
-        QgsMessageLog.logMessage(url, "GlobeBuilder", Qgis.Info)
-        geocoding_request = QNetworkRequest(QUrl(url))
+        url = self.build_url(query.strip(), max_results)
+        QgsMessageLog.logMessage(url.toString(), "GlobeBuilder", Qgis.Info)
+        geocoding_request = QNetworkRequest(url)
         # https://www.riverbankcomputing.com/pipermail/pyqt/2016-May/037514.html
-        geocoding_request.setRawHeader(b"User-Agent", bytes(user_agent, "utf-8"))
+        geocoding_request.setRawHeader(b"User-Agent", USER_AGENT.encode("utf-8"))
         self.network_access_manager.get(geocoding_request)
 
+    def _fail(self, message):
+        LOGGER.warning(message)
+        if self.error_callback is not None:
+            self.error_callback(message)
+
     def on_search_response(self, search_result):
-        error = search_result.error()
+        try:
+            if search_result.error() != NO_ERROR:
+                self._fail(tr(u"Geocoding failed: {}", search_result.errorString()))
+                return
+
+            data_string = bytes(search_result.readAll()).decode('utf-8')
+            try:
+                features = json.loads(data_string)['features']
+            except (ValueError, KeyError):
+                self._fail(tr(u"Geocoding failed: unexpected answer from the server"))
+                return
+
+            self.callback(self.parse_features(features))
+        finally:
+            search_result.deleteLater()
+
+    @staticmethod
+    def parse_features(features):
         result_dict = {}
-        if error == QNetworkReply.NoError:
-            bytes_string = search_result.readAll()
-            data_string = str(bytes_string, 'utf-8')
-
-            result = json.loads(data_string)
-
-            for f in result['features']:
-                name_parts = f['properties']['display_name'].split(",")
-                name = "{} ({})".format(",".join(
-                    name_parts[0:min(MAX_NAME_PARTS, len(name_parts) - 1)]),
-                    name_parts[-1].strip()) if len(name_parts) > 1 else name_parts[0]
-                coordinates = f['geometry']['coordinates']
-                result_dict[name] = coordinates
-        else:
-            LOGGER.warning(str(error))
-            LOGGER.warning(search_result.errorString())
-
-        self.callback(result_dict)
+        for f in features:
+            name_parts = f['properties']['display_name'].split(",")
+            name = "{} ({})".format(",".join(
+                name_parts[0:min(MAX_NAME_PARTS, len(name_parts) - 1)]),
+                name_parts[-1].strip()) if len(name_parts) > 1 else name_parts[0]
+            result_dict[name] = f['geometry']['coordinates']
+        return result_dict
