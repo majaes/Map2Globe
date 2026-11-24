@@ -400,6 +400,11 @@ class Map2GlobeDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     def update_buttons_state(self, *args):
         """"Apply changes" and "Switch the map to flat" only make sense while the map shows a globe."""
         has_globe = Globe.exists_in_map()
+        # The globe is already there: "Apply changes" is the way to update it
+        self.pushButtonRun.setEnabled(not has_globe)
+        self.pushButtonRun.setToolTip(
+            tr(u"The map already shows a globe: use \"Apply changes\" to update it") if has_globe
+            else tr(u"Build the globe from the settings above"))
         self.pushButtonApplyVisualizations.setEnabled(has_globe)
         self.pushButtonApplyVisualizations.setToolTip(
             "" if has_globe else tr(u"Switch the map to a globe first: there is nothing to update yet"))

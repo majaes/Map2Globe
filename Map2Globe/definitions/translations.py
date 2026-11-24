@@ -39,6 +39,8 @@ FR = {
     "Halo / outline": "Halo / contour",
     "Colors": "Couleurs",
     "Address or place name": "Adresse ou nom de lieu",
+    "The map already shows a globe: use \"Apply changes\" to update it":
+        "La carte montre déjà un globe : utilisez « Appliquer les modifications » pour le mettre à jour",
     "Build the globe from the settings above": "Construire le globe avec les réglages ci-dessus",
     "Natural Earth countries, bundled with the plugin (works offline)":
         "Pays Natural Earth, fournis avec le plugin (fonctionne hors ligne)",
