@@ -41,7 +41,7 @@ except AttributeError:  # pragma: no cover
     NO_ERROR = QNetworkReply.NoError
 
 # Nominatim's usage policy requires an identifying User-Agent (a generic browser one can be blocked).
-USER_AGENT = "Map2Globe-QGIS-plugin (+https://github.com/majaes/Globe_builder_QGIS)"
+USER_AGENT = "Map2Globe-QGIS-plugin (+https://github.com/majaes/Map2Globe)"
 
 
 # Nominatim's usage policy allows at most one request per second
