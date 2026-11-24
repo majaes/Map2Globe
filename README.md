@@ -22,6 +22,20 @@ un clic. L'interface est en français et en anglais (bouton FR / EN).*
 * The globe's projection is named *Map2Globe - Azimuthal Orthographic* instead of "unknown CRS".
 * **French and English** interface (FR / EN toggle at the top of the panel; English by default). The generated layers follow the language.
 
+## Screenshots
+
+The panel on a flat map, before the switch:
+
+![The Map2Globe panel on a flat map](docs/images/panel-flat-map.png)
+
+The globe, and the menu that opens the panel (*Plugins > Map2Globe > Build Globe view*):
+
+![The globe built by Map2Globe and the Plugins menu](docs/images/globe-and-menu.png)
+
+Map2Globe in the QGIS plugin manager:
+
+![Map2Globe in the QGIS plugin manager](docs/images/plugin-manager.png)
+
 ## Requirements
 
 QGIS 4.0 or later (developed and tested on QGIS 4.0.1). The address search and the Sentinel-2 layer need an Internet
