@@ -269,6 +269,7 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.update_apply_button_state()
 
     def update_map_globe(self):
+        self.globe.suspend_auto_crs_setup()
         # Capture the view before any CRS switch below: the canvas extent isn't
         # guaranteed to be recalculated in the new CRS right away, which could
         # otherwise make the "intersecting current view" selection wrong.
@@ -291,6 +292,7 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
     @pyqtSlot()
     def on_pushButtonRun_clicked(self):
+        self.globe.suspend_auto_crs_setup()
         self.load_data_to_globe(False)
         self.old_coordinates = self.calculate_origin_coordinates()
         self.globe.set_origin(self.old_coordinates)
@@ -311,6 +313,7 @@ class GlobeBuilderDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.update_apply_button_state()
 
     def update_layout_globe(self, layout):
+        self.globe.suspend_auto_crs_setup()
         coordinates = self.calculate_origin_coordinates()
         if coordinates is None:
             return

@@ -50,8 +50,8 @@ from GlobeBuilder.ui.globe_builder_dockwidget import GlobeBuilderDockWidget  # n
 class FakeIface:
     """Minimal QgisInterface: just what the plugin uses."""
 
-    def __init__(self, window, canvas, bar):
-        self._window, self._canvas, self._bar = window, canvas, bar
+    def __init__(self, window, canvas, bar, bridge=None):
+        self._window, self._canvas, self._bar, self._bridge = window, canvas, bar, bridge
 
     def mapCanvas(self):
         return self._canvas
@@ -61,6 +61,9 @@ class FakeIface:
 
     def mainWindow(self):
         return self._window
+
+    def layerTreeCanvasBridge(self):
+        return self._bridge
 
 
 window = QMainWindow()
@@ -72,14 +75,12 @@ window.setCentralWidget(canvas)
 bar = QgsMessageBar(canvas)
 project = QgsProject.instance()
 bridge = QgsLayerTreeMapCanvasBridge(project.layerTreeRoot(), canvas)  # keeps the canvas in sync with the project
-# Don't let the bridge reset the project CRS from the first layer added (it would undo the globe projection)
-bridge.setAutoSetupOnFirstLayer(False)
 project.setCrs(QgsCoordinateReferenceSystem('EPSG:4326'))  # what a new QGIS project starts with
 
 # QGIS keeps the canvas CRS in sync with the project CRS; the bridge doesn't do that part.
 project.crsChanged.connect(lambda: canvas.setDestinationCrs(project.crs()))
 
-iface = FakeIface(window, canvas, bar)
+iface = FakeIface(window, canvas, bar, bridge)
 dock = GlobeBuilderDockWidget(iface)
 window.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock)
 window.resizeDocks([dock], [540], Qt.Orientation.Horizontal)

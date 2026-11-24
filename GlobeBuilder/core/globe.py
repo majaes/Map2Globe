@@ -22,6 +22,7 @@
 import logging
 import os
 
+from qgis.PyQt.QtCore import QTimer
 from qgis.PyQt.QtGui import QColor
 from qgis.core import (QgsProject, QgsCoordinateReferenceSystem, Qgis, QgsRasterLayer, QgsVectorLayer,
                        QgsMapThemeCollection, QgsLayoutItemMap,
@@ -67,6 +68,36 @@ class Globe:
     # Layer names the plugin itself creates and is therefore safe to delete/recreate.
     # Layers manually added to the group by the user (e.g. their own basemap) are left untouched.
     MANAGED_LAYER_NAMES = {Halo.LAYER_NAME, Halo.OCEANS_LAYER_NAME, Graticules.LAYER_NAME, tr(u'Countries'), tr(u'S2 Cloudless 2018')}
+
+    # How long QGIS' "set CRS from the first layer" step is kept off after building the globe (ms).
+    # That step runs deferred, i.e. after the code building the globe has returned.
+    AUTO_CRS_SETUP_SUSPENSION_MS = 1500
+
+    def suspend_auto_crs_setup(self):
+        """Stop QGIS from resetting the project CRS to the first layer's CRS while the globe is built.
+
+        When the first layers are added to a project, QGIS' layer tree/canvas bridge deferredly sets
+        the project CRS (and extent) from the first layer, i.e. EPSG:4326 for the countries. That
+        silently undid the globe projection (flat world map) in a project without layers.
+        """
+        get_bridge = getattr(self.iface, "layerTreeCanvasBridge", None)
+        bridge = get_bridge() if get_bridge is not None else None
+        if bridge is None:
+            return
+        if bridge.autoSetupOnFirstLayer():
+            bridge.setAutoSetupOnFirstLayer(False)
+            self._auto_crs_setup_bridge = bridge
+        else:
+            bridge = getattr(self, "_auto_crs_setup_bridge", None)
+            if bridge is None:
+                return  # it was already off before us: not ours to switch back on
+        QTimer.singleShot(Globe.AUTO_CRS_SETUP_SUSPENSION_MS, self._restore_auto_crs_setup)
+
+    def _restore_auto_crs_setup(self):
+        bridge = getattr(self, "_auto_crs_setup_bridge", None)
+        if bridge is not None:
+            bridge.setAutoSetupOnFirstLayer(True)
+            self._auto_crs_setup_bridge = None
 
     @staticmethod
     def find_group():
