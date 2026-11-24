@@ -21,7 +21,7 @@ parser.add_argument("--fr", action="store_true")
 parser.add_argument("--auto", metavar="FILE")
 args = parser.parse_args()
 
-from qgis.core import QgsApplication, QgsProject
+from qgis.core import QgsApplication, QgsCoordinateReferenceSystem, QgsProject
 from qgis.gui import QgsMapCanvas, QgsLayerTreeMapCanvasBridge, QgsMessageBar
 from qgis.PyQt.QtCore import Qt, QTimer, QCoreApplication
 from qgis.PyQt.QtWidgets import QMainWindow
@@ -72,6 +72,9 @@ window.setCentralWidget(canvas)
 bar = QgsMessageBar(canvas)
 project = QgsProject.instance()
 bridge = QgsLayerTreeMapCanvasBridge(project.layerTreeRoot(), canvas)  # keeps the canvas in sync with the project
+# Don't let the bridge reset the project CRS from the first layer added (it would undo the globe projection)
+bridge.setAutoSetupOnFirstLayer(False)
+project.setCrs(QgsCoordinateReferenceSystem('EPSG:4326'))  # what a new QGIS project starts with
 
 # QGIS keeps the canvas CRS in sync with the project CRS; the bridge doesn't do that part.
 project.crsChanged.connect(lambda: canvas.setDestinationCrs(project.crs()))

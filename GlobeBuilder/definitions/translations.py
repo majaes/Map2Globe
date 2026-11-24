@@ -35,9 +35,8 @@ FR = {
     "Search": "Rechercher",
     "Maximum number of addresses to list:": "Nombre maximal d'adresses à lister :",
     # --- UI: visualisation ---
-    "  Fill": "  Remplissage",
     "  Line": "  Contour",
-    "Oceans": "Océans",
+    "  Oceans": "  Océans",
     "  Countries": "  Pays",
     "Optional visualizations": "Visualisations facultatives",
     "Halo type": "Type de halo",

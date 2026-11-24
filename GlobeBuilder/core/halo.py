@@ -35,6 +35,8 @@ LOGGER = logging.getLogger(plugin_name())
 
 class Halo:
     LAYER_NAME = tr('Halo')
+    # A halo layer that has a fill colour is the globe's water: it gets this name instead
+    OCEANS_LAYER_NAME = tr('Oceans')
 
     def __init__(self, iface: QgisInterface, origin, projection) -> None:
         self.iface = iface
@@ -50,7 +52,8 @@ class Halo:
         proj_string = self.projection.value.proj_str(self.origin)
         # Block signals required to prevent the pop up asking about the crs change
         self.iface.mainWindow().blockSignals(True)
-        layer = QgsVectorLayer(draw_method.value, self.LAYER_NAME, "memory")
+        name = self.OCEANS_LAYER_NAME if fill_color is not None else self.LAYER_NAME
+        layer = QgsVectorLayer(draw_method.value, name, "memory")
         crs = layer.crs()
         if not crs.createFromProj(proj_string):
             LOGGER.warning(tr(u"Could not create the globe's custom projection for the halo"))

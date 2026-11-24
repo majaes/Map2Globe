@@ -26,7 +26,8 @@ from qgis.core import QgsProject, QgsProcessingException, Qgis
 
 from ..core.globe import Globe
 from ..definitions.projections import Projections
-from ..definitions.settings import (DEFAULT_ORIGIN)
+from ..definitions.settings import (DEFAULT_ORIGIN, DEFAULT_COUNTRIES_COLOR, DEFAULT_HALO_COLOR,
+                                    DEFAULT_HALO_FILL_COLOR)
 
 
 def test_projection_change_with_default_origin(globe):
@@ -100,30 +101,54 @@ def test_adding_halo(globe, qgis_iface, qgis_canvas):
     assert "Halo" in names
 
 
-def test_adding_oceans(globe, qgis_iface, qgis_canvas):
-    globe.add_halo(False, QColor(Qt.GlobalColor.blue))
-    globe.add_oceans(QColor('#a6cee3'))
+def test_halo_without_fill_stays_a_halo(globe, qgis_iface, qgis_canvas):
+    globe.add_halo(False, QColor('#ffffff'))
     names = get_existing_layer_names(qgis_iface, qgis_canvas)
-    assert "Oceans" in names
+    assert "Halo" in names and "Oceans" not in names
+
+
+def test_filled_halo_layer_is_the_oceans_layer(globe, qgis_iface, qgis_canvas):
+    globe.add_halo(False, QColor('#ffffff'), QColor('#a6cee3'))
+    names = get_existing_layer_names(qgis_iface, qgis_canvas)
+    assert "Oceans" in names and "Halo" not in names
     layers = [node.layer() for node in globe.group.findLayers()]
-    # at the very bottom, below the halo, and with the requested colour
+    # at the very bottom, with the requested fill colour
     assert layers[-1].name() == "Oceans"
     assert layers[-1].renderer().symbol().color() == QColor('#a6cee3')
     assert layers[-1].featureCount() == 1
 
 
+def test_halo_with_fill_gives_a_halo_on_top_and_oceans_at_the_bottom(globe):
+    globe.add_halo(False, QColor('#ffffff'), QColor('#a6cee3'), halo_with_fill=True)
+    names = [node.layer().name() for node in globe.group.findLayers()]
+    assert names == ["Halo", "Oceans"]
+
+
 def test_oceans_are_replaced_not_duplicated(globe):
-    globe.add_oceans(QColor(Qt.GlobalColor.red))
-    globe.add_oceans(QColor(Qt.GlobalColor.green))
+    globe.add_halo(False, QColor('#ffffff'), QColor(Qt.GlobalColor.red))
+    globe.add_halo(False, QColor('#ffffff'), QColor(Qt.GlobalColor.green))
     layers = QgsProject.instance().mapLayersByName("Oceans")
     assert len(layers) == 1
     assert layers[0].renderer().symbol().color() == QColor(Qt.GlobalColor.green)
 
 
+def test_remove_halo_removes_halo_and_oceans(globe):
+    globe.add_halo(False, QColor('#ffffff'), QColor('#a6cee3'), halo_with_fill=True)
+    globe.remove_halo()
+    assert not QgsProject.instance().mapLayersByName("Halo")
+    assert not QgsProject.instance().mapLayersByName("Oceans")
+
+
 def test_adding_oceans_keeps_the_canvas_color(globe, qgis_canvas):
     before = qgis_canvas.canvasColor()
-    globe.add_oceans(QColor('#a6cee3'))
+    globe.add_halo(False, QColor('#ffffff'), QColor('#a6cee3'))
     assert qgis_canvas.canvasColor() == before
+
+
+def test_default_colors():
+    assert DEFAULT_COUNTRIES_COLOR.name() == '#ffe9a8'
+    assert DEFAULT_HALO_COLOR.name() == '#ffffff'
+    assert DEFAULT_HALO_FILL_COLOR.name() == '#a6cee3'
 
 
 def test_group(globe):
