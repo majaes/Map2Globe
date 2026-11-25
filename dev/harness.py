@@ -19,6 +19,8 @@ sys.path.insert(0, ROOT)
 parser = argparse.ArgumentParser()
 parser.add_argument("--fr", action="store_true")
 parser.add_argument("--auto", metavar="FILE")
+parser.add_argument("--shrink", action="store_true", help="with --auto: shrink the canvas after building (like a panel opening)")
+parser.add_argument("--none", action="store_true", help="with --auto: halo type None (countries only)")
 parser.add_argument("--flat", nargs="?", const="outline", choices=["outline", "halo"], help="with --auto: use oceans, build the globe, then switch back to flat")
 args = parser.parse_args()
 
@@ -98,12 +100,16 @@ print("dock minimumSizeHint:", dock.minimumSizeHint().width(), "x", dock.minimum
 
 if args.auto:
     def _auto():
+        if args.none:
+            dock.radioButtonHNone.setChecked(True)
         if args.flat:
             (dock.radioButtonHFillWithHalo if args.flat == "halo" else dock.radioButtonHFill).setChecked(True)
         dock.pushButtonRun.click()
         if args.flat:
             QTimer.singleShot(1500, dock.pushButtonFlatMap.click)
-        QTimer.singleShot(2500 if not args.flat else 4000, _grab)
+        if args.shrink:
+            QTimer.singleShot(1500, lambda: canvas.setFixedHeight(330))
+        QTimer.singleShot(2500 if not args.flat else 4000 if not args.shrink else 4500, _grab)
 
     def _grab():
         canvas.waitWhileRendering()

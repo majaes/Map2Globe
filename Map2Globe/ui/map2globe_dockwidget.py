@@ -23,10 +23,10 @@
 import logging
 import os
 
-from qgis.PyQt.QtCore import Qt, pyqtSignal, pyqtSlot
+from qgis.PyQt.QtCore import QEvent, QObject, QTimer, Qt, pyqtSignal, pyqtSlot
 from qgis.PyQt import QtWidgets
 from qgis.PyQt.QtWidgets import QButtonGroup, QCheckBox, QComboBox, QCompleter, QHBoxLayout, QPushButton
-from qgis.core import Qgis, QgsProject
+from qgis.core import Qgis, QgsProject, QgsRectangle
 
 from ..core.globe import Globe
 from ..core.utils.geocoder import Geocoder
@@ -35,7 +35,7 @@ from ..core.utils.utils import (transform_to_wgs84, get_map_center_coordinates,
                                 load_name_centers, local_data_copy)
 from ..definitions.language import current_language, set_language
 from ..definitions.projections import Projections
-from ..definitions.settings import (LOCAL_DATA_DIR, DEFAULT_MAX_NUMBER_OF_RESULTS, DEFAULT_USE_NE_COUNTRIES,
+from ..definitions.settings import (LOCAL_DATA_DIR, EARTH_RADIUS, DEFAULT_MAX_NUMBER_OF_RESULTS, DEFAULT_USE_NE_COUNTRIES,
                                     DEFAULT_USE_NE_GRATICULES, DEFAULT_USE_S2_CLOUDLESS, DEFAULT_ORIGIN,
                                     DEFAULT_BACKGROUND_COLOR, DEFAULT_HALO_COLOR, DEFAULT_HALO_FILL_COLOR,
                                     DEFAULT_COUNTRIES_COLOR,
@@ -48,6 +48,25 @@ from ..qgis_plugin_tools.tools.version import proj_version
 
 FORM_CLASS = load_ui('map2globe_dockwidget_base.ui')
 LOGGER = logging.getLogger(plugin_name())
+
+
+class CanvasResizeWatcher(QObject):
+    """When the canvas is resized while `was_fitted()` is true, calls `refit` shortly after the resize."""
+
+    def __init__(self, canvas, was_fitted, refit, parent=None):
+        super().__init__(parent)
+        self._was_fitted = was_fitted
+        self._timer = QTimer(self)
+        self._timer.setSingleShot(True)
+        self._timer.setInterval(200)
+        self._timer.timeout.connect(refit)
+        canvas.installEventFilter(self)
+
+    def eventFilter(self, watched, event):
+        # The filter sees the event before the canvas handles it: the extent is still the one before the resize
+        if event.type() == QEvent.Type.Resize and self._was_fitted():
+            self._timer.start()
+        return False
 
 
 class Map2GlobeDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
@@ -123,6 +142,8 @@ class Map2GlobeDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         self.update_buttons_state()
         self.is_initializing = False
+        self.resize_watcher = CanvasResizeWatcher(iface.mapCanvas(), self.globe_is_fully_in_view,
+                                                  self.refit_globe, self)
 
     def setup_language_buttons(self):
         """FR / EN toggle at the top of the panel."""
@@ -419,6 +440,19 @@ class Map2GlobeDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.globe.set_group_visibility(True)
         self.add_halo_to_globe()
         self.globe.zoom_to_globe()
+
+    def globe_is_fully_in_view(self):
+        """True while the whole globe is shown (it is centred on (0, 0) in its own projection)."""
+        if self.is_building or not Globe.exists_in_map():
+            return False
+        radius = EARTH_RADIUS * 0.98
+        return self.iface.mapCanvas().extent().contains(QgsRectangle(-radius, -radius, radius, radius))
+
+    def refit_globe(self):
+        """A panel opened or closed and resized the canvas: QGIS can leave the globe off-centre and cut. Fit it
+        again, but only if the whole globe was shown before, so that a view the user zoomed in on stays as it is."""
+        if not self.is_building and Globe.exists_in_map():
+            self.globe.zoom_to_globe()
 
     def hide_globe_layers_on_flat_map(self, *args):
         """Whatever way the map became flat, fit the plugin's layers to it (see Globe.adapt_to_flat_map)."""
