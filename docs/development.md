@@ -26,6 +26,13 @@ root, with the Python of QGIS:
 $env:QT_QPA_PLATFORM="offscreen"; & "C:\Program Files\QGIS 4.0.1\bin\python-qgis.bat" -m pytest Map2Globe/test -q
 ```
 
+The plugin supports QGIS 3.44 (Qt 5) and QGIS 4 (Qt 6): run the tests with both. With QGIS 3.44 the launcher is
+`python-qgis-ltr.bat`:
+
+```powershell
+$env:QT_QPA_PLATFORM="offscreen"; & "C:\Program Files\QGIS 3.44.15\bin\python-qgis-ltr.bat" -m pytest Map2Globe/test -q
+```
+
 ## Trying the panel without reloading QGIS
 
 `dev/harness.py` opens the panel next to a real map canvas and layers panel, outside QGIS:

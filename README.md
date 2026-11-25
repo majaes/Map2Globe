@@ -3,7 +3,7 @@ Map2Globe
 
 **Location and situation maps made easy: switch your QGIS map to a globe and back to a flat map with one click.**
 
-![QGIS Plugin](https://img.shields.io/badge/QGIS-Plugin-589632?logo=qgis&logoColor=white) ![version](https://img.shields.io/badge/version-1.0.0-0f6fb5) ![QGIS 4](https://img.shields.io/badge/QGIS-4.0%2B-589632) ![Qt 6](https://img.shields.io/badge/Qt-6-41cd52?logo=qt&logoColor=white) ![license](https://img.shields.io/badge/license-GPLv2%2B-e07b39) ![languages](https://img.shields.io/badge/interface-FR%20%2F%20EN-555)
+![QGIS Plugin](https://img.shields.io/badge/QGIS-Plugin-589632?logo=qgis&logoColor=white) ![version](https://img.shields.io/badge/version-1.0.0-0f6fb5) ![QGIS 3.44+](https://img.shields.io/badge/QGIS-3.44%20LTR%20%7C%204.x-589632) ![Qt 5 and 6](https://img.shields.io/badge/Qt-5%20%7C%206-41cd52?logo=qt&logoColor=white) ![license](https://img.shields.io/badge/license-GPLv2%2B-e07b39) ![languages](https://img.shields.io/badge/interface-FR%20%2F%20EN-555)
 
 *A plugin created, designed and maintained by [ANABA MANGA](https://anbmng.com).*
 
@@ -42,20 +42,23 @@ Map2Globe in the QGIS plugin manager:
 
 ## Requirements
 
-QGIS 4.0 or later (developed and tested on QGIS 4.0.1). The address search and the Sentinel-2 layer need an Internet
+QGIS **3.44 (LTR)** or any **QGIS 4.x** (Qt 5 and Qt 6). It was developed and tested on QGIS 4.0.1 and on QGIS 3.44.15. The address search and the Sentinel-2 layer need an Internet
 connection; everything else works offline.
 
 ### Development and test environment
 
-Map2Globe is a pure PyQGIS plugin (no external Python dependency). It was developed and tested on:
+Map2Globe is a pure PyQGIS plugin (no external Python dependency). It was developed and tested on two QGIS versions:
 
-| Component | Version |
-|---|---|
-| QGIS | 4.0.1 |
-| Qt | 6.8 |
-| Python | 3.12 |
-| GDAL / PROJ / GEOS | 3.12 / 9.7 / 3.14 |
-| OS | Windows 11 |
+| Component | QGIS 3.44 LTR | QGIS 4.0 |
+|---|---|---|
+| QGIS | 3.44.15 | 4.0.1 |
+| Qt | 5.15 | 6.8 |
+| Python | 3.12 | 3.12 |
+| GDAL / PROJ / GEOS | 3.13 / 9.8 / 3.15 | 3.12 / 9.7 / 3.14 |
+| OS | Windows 11 | Windows 11 |
+
+The automated tests and the interface were checked on both. Other systems (macOS, Linux) and other QGIS versions
+have not been tested.
 
 How it works: the globe is a custom PROJ azimuthal orthographic projection centred on the origin you choose,
 registered as a named user CRS (*Map2Globe - ...*). The halo and the oceans are generated layers saved as files;
