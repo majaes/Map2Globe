@@ -95,8 +95,7 @@ def persist_layer(layer, file_stem, name=None):
             return layer
         # The CRS read back from the file can differ from the one that was written (e.g. matched to another
         # registered user CRS): the geometries were written in the original one, so enforce it.
-        if saved.crs() != layer.crs():
-            saved.setCrs(layer.crs())
+        saved.setCrs(layer.crs())
         return saved
     except Exception:  # never let a saving problem prevent the globe from being built
         return layer

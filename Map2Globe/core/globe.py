@@ -470,4 +470,9 @@ class Globe:
             self.remove_halo()
 
         layer, index = halo.create_halo_layer(use_effects, stroke_color, fill_color)
+        # The disc must use exactly the project's globe CRS. QGIS can hand back an older definition of the named
+        # user CRS (it is updated in place when the centre changes), which draws the disc as a sliver.
+        project_crs = self.qgis_instance.crs()
+        if Globe.is_globe_crs(project_crs):
+            layer.setCrs(project_crs)
         self.insert_layer_to_group(layer, index)

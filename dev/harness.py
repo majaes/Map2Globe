@@ -20,6 +20,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--fr", action="store_true")
 parser.add_argument("--auto", metavar="FILE")
 parser.add_argument("--shrink", action="store_true", help="with --auto: shrink the canvas after building (like a panel opening)")
+parser.add_argument("--apply-country", metavar="NAME", nargs="+", help="with --auto: after building, centre on this country and click Apply changes")
 parser.add_argument("--none", action="store_true", help="with --auto: halo type None (countries only)")
 parser.add_argument("--flat", nargs="?", const="outline", choices=["outline", "halo"], help="with --auto: use oceans, build the globe, then switch back to flat")
 args = parser.parse_args()
@@ -100,6 +101,8 @@ print("dock minimumSizeHint:", dock.minimumSizeHint().width(), "x", dock.minimum
 
 if args.auto:
     def _auto():
+        if args.apply_country:
+            dock.radioButtonHFillWithHalo.setChecked(True)
         if args.none:
             dock.radioButtonHNone.setChecked(True)
         if args.flat:
@@ -107,15 +110,25 @@ if args.auto:
         dock.pushButtonRun.click()
         if args.flat:
             QTimer.singleShot(1500, dock.pushButtonFlatMap.click)
+        if args.apply_country:
+            def _apply(name):
+                dock.radioButtonName.setChecked(True)
+                dock.comboBoxNames.setCurrentText(name)
+                dock.pushButtonApplyVisualizations.click()
+            for i, name in enumerate(args.apply_country):
+                QTimer.singleShot(1500 * (i + 1), lambda name=name: _apply(name))
         if args.shrink:
             QTimer.singleShot(1500, lambda: canvas.setFixedHeight(330))
-        QTimer.singleShot(2500 if not args.flat else 4000 if not args.shrink else 4500, _grab)
+        QTimer.singleShot(1500 * (len(args.apply_country) + 2) if args.apply_country else 2500 if not args.flat else 4000 if not args.shrink else 4500, _grab)
 
     def _grab():
         canvas.waitWhileRendering()
         app.processEvents()
         print("canvas layers:", [l.name() for l in canvas.layers()], "extent:", canvas.extent().toString(0),
               "crs:", canvas.mapSettings().destinationCrs().toProj()[:30], "size:", canvas.size().width(), canvas.size().height())
+        print("crs:", project.crs().authid(), project.crs().description())
+        for l in project.mapLayers().values():
+            print("layer:", l.name(), l.crs().authid(), l.crs().description(), l.extent().toString(0))
         print("tree:", [(n.layer().name(), n.itemVisibilityChecked()) for n in project.layerTreeRoot().findLayers()])
         window.grab().save(args.auto)
         print("screenshot:", args.auto)
