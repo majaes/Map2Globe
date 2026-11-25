@@ -57,6 +57,20 @@ FR = {
     "Apply changes": "Appliquer les modifications",
     "Switch the map to a globe": "Passer la carte en globe",
     "Switch the map to flat": "Passer la carte à plat",
+    # --- Updates (optional) ---
+    "Check for updates published on anbmng.com (optional)":
+        "Rechercher les mises à jour publiées sur anbmng.com (facultatif)",
+    "Adds the anbmng.com plugin repository to QGIS (Plugins > Manage and Install Plugins > Settings): "
+    "QGIS then tells you when a new version is available. Map2Globe sends nothing itself. "
+    "Unticking removes the repository.":
+        "Ajoute le dépôt d'extensions anbmng.com à QGIS (Extensions > Installer/Gérer les extensions > Paramètres) : "
+        "QGIS signale alors lui-même les nouvelles versions. Map2Globe n'envoie rien. "
+        "Décocher retire le dépôt.",
+    "The anbmng.com repository was added: QGIS will report new versions "
+    "(reopen the plugin manager to see it)":
+        "Le dépôt anbmng.com est ajouté : QGIS signalera les nouvelles versions "
+        "(rouvrez le gestionnaire d'extensions pour le voir)",
+    "The anbmng.com repository was removed": "Le dépôt anbmng.com est retiré",
     # --- Attributions ---
     "Inspired by the GlobeBuilder plugin by Gispo Ltd. (GPL).": "Inspiré du plugin GlobeBuilder de Gispo Ltd. (GPL).",
     'The free vector and raster map data used come from the '

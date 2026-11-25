@@ -80,6 +80,13 @@ covers the globe, the language switch, the geocoder and the plugin metadata.
 To use the globe in a print layout, add the map with the layout's own *Add Map* tool: it shows the map drawn in the
 workspace.
 
+## Optional updates
+
+In the *Credits* panel, the box **Check for updates published on anbmng.com (optional)** is unticked by default.
+Ticking it adds the anbmng.com plugin repository to QGIS (*Plugins > Manage and Install Plugins > Settings*), so that
+QGIS itself reports new versions of Map2Globe. The plugin sends no request of its own; a repository you already have
+is never overwritten, and unticking the box removes the repository only if the plugin added it.
+
 ## Data and licences
 
 * [Natural Earth](https://www.naturalearthdata.com): public domain.

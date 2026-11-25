@@ -25,11 +25,12 @@ import os
 
 from qgis.PyQt.QtCore import Qt, pyqtSignal, pyqtSlot
 from qgis.PyQt import QtWidgets
-from qgis.PyQt.QtWidgets import QButtonGroup, QComboBox, QCompleter, QHBoxLayout, QPushButton
+from qgis.PyQt.QtWidgets import QButtonGroup, QCheckBox, QComboBox, QCompleter, QHBoxLayout, QPushButton
 from qgis.core import Qgis, QgsProject
 
 from ..core.globe import Globe
 from ..core.utils.geocoder import Geocoder
+from ..core.utils import updates
 from ..core.utils.utils import (transform_to_wgs84, get_map_center_coordinates,
                                 load_name_centers, local_data_copy)
 from ..definitions.language import current_language, set_language
@@ -155,6 +156,7 @@ class Map2GlobeDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         self.update_name_placeholder()
         self.update_placeholders()
         self.update_tooltips()
+        self.update_updates_texts()
         self.populate_comboBoxProjections()
         self.update_attributions()
         self.update_buttons_state()
@@ -197,9 +199,36 @@ class Map2GlobeDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
 
         self.label_5.setWordWrap(True)
         self.label_5.setOpenExternalLinks(True)
+        self.setup_updates_checkbox()
         self.groupBox_6.setCollapsed(True)
         self.scrollArea.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.update_placeholders()
+
+    def setup_updates_checkbox(self):
+        """Optional: let QGIS report new versions published on the author's site (off by default)."""
+        self.checkBoxUpdates = QCheckBox()
+        self.checkBoxUpdates.setChecked(get_setting("checkUpdates", False, bool) and updates.is_registered())
+        self.checkBoxUpdates.toggled.connect(self.on_updates_toggled)
+        self.verticalLayout_8.addWidget(self.checkBoxUpdates)
+        self.update_updates_texts()
+
+    def update_updates_texts(self):
+        self.checkBoxUpdates.setText(tr(u"Check for updates published on anbmng.com (optional)"))
+        self.checkBoxUpdates.setToolTip(tr(
+            u"Adds the anbmng.com plugin repository to QGIS (Plugins > Manage and Install Plugins > Settings): "
+            u"QGIS then tells you when a new version is available. Map2Globe sends nothing itself. "
+            u"Unticking removes the repository."))
+
+    def on_updates_toggled(self, checked):
+        set_setting("checkUpdates", checked)
+        if checked:
+            if updates.register_repository():
+                self.iface.messageBar().pushMessage(
+                    plugin_name(), tr(u"The anbmng.com repository was added: QGIS will report new versions "
+                                      u"(reopen the plugin manager to see it)"), level=Qgis.Info, duration=8)
+        elif updates.unregister_repository():
+            self.iface.messageBar().pushMessage(
+                plugin_name(), tr(u"The anbmng.com repository was removed"), level=Qgis.Info, duration=5)
 
     def update_placeholders(self):
         self.lineEditGeocoding.setPlaceholderText(tr(u"Address or place name"))
