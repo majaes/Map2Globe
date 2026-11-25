@@ -23,7 +23,7 @@
 import pytest
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QColor
-from qgis.core import QgsCoordinateReferenceSystem, QgsProject, QgsProcessingException, Qgis, QgsVectorLayer
+from qgis.core import QgsApplication, QgsCoordinateReferenceSystem, QgsProject, QgsProcessingException, Qgis, QgsVectorLayer
 
 from ..core.globe import Globe
 from ..definitions.projections import Projections
@@ -222,7 +222,7 @@ def test_flat_map_without_remembered_state_falls_back_to_wgs84(globe):
     assert QgsProject.instance().crs().authid() == "EPSG:4326"
 
 
-def test_globe_crs_is_named_and_a_single_entry_is_reused(globe):
+def test_globe_crs_is_named_and_a_single_entry_is_kept(globe):
     names = []
     ids = []
     for origin in ({'lat': 3.0, 'lon': 11.0}, {'lat': 42.5, 'lon': 0.5}, {'lat': -17.0, 'lon': 178.0}):
@@ -233,7 +233,9 @@ def test_globe_crs_is_named_and_a_single_entry_is_reused(globe):
         ids.append(crs.authid())
         assert "lat_0={}".format(origin['lat']) in crs.toProj()  # the entry follows the origin
     assert all(name == "Map2Globe - Azimuthal Orthographic" for name in names)
-    assert len(set(ids)) == 1 and ids[0].startswith("USER:")
+    assert all(i.startswith("USER:") for i in ids)
+    registry = QgsApplication.coordinateReferenceSystemRegistry()
+    assert len([d for d in registry.userCrsList() if d.name == "Map2Globe - Azimuthal Orthographic"]) == 1
     assert Globe.is_globe_crs(QgsProject.instance().crs())
     assert not Globe.is_globe_crs(QgsCoordinateReferenceSystem("EPSG:4326"))
 

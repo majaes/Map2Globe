@@ -394,20 +394,22 @@ class Globe:
         """Return the globe's projection as a named QGIS user CRS ("Map2Globe - <projection>").
 
         QGIS shows a custom projection without code as "unknown CRS". One user CRS is kept per projection
-        and updated in place when the origin changes (no pile-up of entries). If this QGIS can't register
+        and replaced when the origin changes (no pile-up of entries). If this QGIS can't register
         user CRSs, the unnamed CRS is returned.
         """
         try:
             registry = QgsApplication.coordinateReferenceSystemRegistry()
             name = Globe.GLOBE_CRS_NAME_PREFIX + self.projection.value.name
-            existing = [details for details in registry.userCrsList() if details.name == name]
-            if existing:
-                user_id = existing[0].id
-                registered = registry.updateUserCrs(user_id, crs, name)
-            else:
-                user_id = registry.addUserCrs(crs, name)
-                registered = user_id >= 0
-            if registered:
+            # Replace the entry instead of updating it in place: QGIS keeps objects (layers, canvas, caches) that
+            # still hold the old definition of an updated entry, which draws the halo and the oceans as a sliver
+            # when the centre changes. A new entry has a new identifier, so nothing stale can be reused.
+            # (The new entry is added before the old one is removed: QGIS would otherwise hand out the same
+            # identifier again.)
+            old_ids = [d.id for d in registry.userCrsList() if d.name == name]
+            user_id = registry.addUserCrs(crs, name)
+            for old_id in old_ids:
+                registry.removeUserCrs(old_id)
+            if user_id >= 0:
                 named = QgsCoordinateReferenceSystem("USER:{}".format(user_id))
                 if named.isValid():
                     return named

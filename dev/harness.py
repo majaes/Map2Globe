@@ -25,6 +25,12 @@ parser.add_argument("--none", action="store_true", help="with --auto: halo type 
 parser.add_argument("--flat", nargs="?", const="outline", choices=["outline", "halo"], help="with --auto: use oceans, build the globe, then switch back to flat")
 args = parser.parse_args()
 
+import tempfile
+
+# Work in a temporary QGIS profile: the plugin writes data files and user CRS entries in the profile, and the
+# harness must never touch the profile of a QGIS the developer has open at the same time.
+os.environ["QGIS_CUSTOM_CONFIG_PATH"] = tempfile.mkdtemp(prefix="map2globe_harness_")
+
 from qgis.core import QgsApplication, QgsCoordinateReferenceSystem, QgsLayerTreeModel, QgsProject
 from qgis.gui import QgsLayerTreeView, QgsMapCanvas, QgsLayerTreeMapCanvasBridge, QgsMessageBar
 from qgis.PyQt.QtCore import Qt, QTimer, QCoreApplication
