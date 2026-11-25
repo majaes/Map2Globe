@@ -3,7 +3,7 @@
 
 [general]
 name=Map2Globe
-qgisMinimumVersion=4.0
+qgisMinimumVersion=3.44
 qgisMaximumVersion=4.99
 supportsQt6=True
 description=Made for location and situation maps: switch your QGIS map to a globe (azimuthal orthographic projection) and back to a flat map with one click.
